@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { getToken, getUser, removeToken } from '@/lib/api';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -13,6 +15,7 @@ import {
   Plus,
   Users,
   ShieldCheck,
+  LogOut,
 } from 'lucide-react';
 
 interface MockBirthday {
@@ -37,8 +40,24 @@ interface MockPhoto {
 }
 
 export default function HomePage() {
+  const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date(2026, 8, 1)); // Septiembre 2026
   const [selectedCircle, setSelectedCircle] = useState('Familia');
+  const [user, setUserState] = useState<any>(null);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    setUserState(getUser());
+  }, []);
+
+  const handleLogout = () => {
+    removeToken();
+    router.push('/login');
+  };
 
   const circles = ['Todos', 'Familia', 'Amigos Cercanos', 'Oficina'];
 
@@ -122,6 +141,23 @@ export default function HomePage() {
 
   return (
     <div className="main-container">
+      {/* Top Actions Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>
+            👋 Hola, <strong style={{ color: 'var(--text-main)' }}>{user?.fullName || 'Usuario'}</strong>
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button onClick={() => router.push('/circles')} className="btn-secondary" style={{ fontSize: '0.85rem' }}>
+            <Users size={15} /> Mis Círculos
+          </button>
+          <button onClick={handleLogout} className="btn-secondary" style={{ fontSize: '0.85rem' }}>
+            <LogOut size={15} /> Salir
+          </button>
+        </div>
+      </div>
+
       {/* Hero Welcome Banner */}
       <section className="glass-panel" style={{ padding: '32px', marginBottom: '32px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ maxWidth: '650px', position: 'relative', zIndex: 2 }}>

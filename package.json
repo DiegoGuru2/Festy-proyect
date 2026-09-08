@@ -23,5 +23,8 @@
     "nextjs"
   ],
   "author": "Festy Team",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "dependencies": {
+    "nodemailer": "^10.0.1"
+  }
 }

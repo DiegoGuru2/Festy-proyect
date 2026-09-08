@@ -79,6 +79,10 @@ export const RegisterUserSchema = z.object({
   password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
   fullName: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   timezone: z.string().default('UTC'),
+  birthDay: z.number().int().min(1).max(31).optional(),
+  birthMonth: z.number().int().min(1).max(12).optional(),
+  birthYear: z.number().int().min(1900).max(2100).optional(),
+  inviteCode: z.string().optional(),
 });
 export type RegisterUserInput = z.infer<typeof RegisterUserSchema>;
 
@@ -150,8 +154,8 @@ export type CreateCelebrationInput = z.infer<typeof CreateCelebrationSchema>;
 
 export const SignUploadSchema = z.object({
   celebrationId: z.string().uuid(),
-  mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/heic']),
-  fileSizeBytes: z.number().int().max(10 * 1024 * 1024, 'Máximo 10 MB permitido'),
+  mimeType: z.string().optional(),
+  fileSizeBytes: z.number().int().optional(),
   containsMinors: z.boolean().default(false),
 });
 export type SignUploadInput = z.infer<typeof SignUploadSchema>;

@@ -121,7 +121,7 @@ export const circleInvitations = mysqlTable(
     invitedBy: varchar('invited_by', { length: 36 }).notNull().references(() => users.id),
     inviteType: mysqlEnum('invite_type', ['universal_link', 'direct_code', 'direct_email']).notNull(),
     inviteeEmail: varchar('invitee_email', { length: 255 }),
-    inviteCode: varchar('invite_code', { length: 12 }).notNull(),
+    inviteCode: varchar('invite_code', { length: 32 }).notNull(),
     tokenHash: varchar('token_hash', { length: 255 }).notNull(),
     role: mysqlEnum('role', ['admin', 'member', 'viewer']).notNull().default('member'),
     maxUses: int('max_uses').notNull().default(1),

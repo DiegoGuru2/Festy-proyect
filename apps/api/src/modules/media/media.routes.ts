@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import crypto from 'crypto';
 import { v2 as cloudinary } from 'cloudinary';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import {
   getDbConnection,
   eventPhotos,
@@ -11,6 +11,7 @@ import {
   photoLikes,
   photoComments,
   photoReports,
+  users,
 } from '@festy/db';
 import {
   SignUploadSchema,
@@ -31,6 +32,144 @@ export const mediaRoutes: FastifyPluginAsync = async (fastify) => {
   const db = getDbConnection();
 
   // ---------------------------------------------------------------------------
+  // OBTENER O CREAR CELEBRACIÓN ANUAL DE UN CUMPLEAÑOS
+  // ---------------------------------------------------------------------------
+  fastify.post('/celebrations/get-or-create', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const { birthdayId, year = new Date().getFullYear() } = request.body as { birthdayId: string; year?: number };
+    const userId = request.user.id;
+
+    const birthday = await db.query.birthdays.findFirst({
+      where: and(eq(birthdays.id, birthdayId), sql`${birthdays.deletedAt} IS NULL`),
+    });
+
+    if (!birthday) {
+      return reply.status(404).send({ error: 'Not Found', message: 'Cumpleaños no encontrado' });
+    }
+
+    // Validar membresía en el círculo
+    const membership = await db.query.circleMembers.findFirst({
+      where: and(eq(circleMembers.circleId, birthday.circleId), eq(circleMembers.userId, userId)),
+    });
+
+    if (!membership) {
+      return reply.status(403).send({ error: 'Forbidden', message: 'No perteneces a este círculo' });
+    }
+
+    let celebration = await db.query.celebrations.findFirst({
+      where: and(
+        eq(celebrations.birthdayId, birthdayId),
+        eq(celebrations.celebrationYear, year),
+        sql`${celebrations.deletedAt} IS NULL`
+      ),
+    });
+
+    if (!celebration) {
+      const celebrationId = crypto.randomUUID();
+      const eventDate = new Date(year, birthday.birthMonth - 1, birthday.birthDay);
+      const title = `Cumpleaños de ${birthday.fullName} (${year})`;
+
+      await db.insert(celebrations).values({
+        id: celebrationId,
+        birthdayId,
+        celebrationYear: year,
+        title,
+        eventDate,
+        visibility: 'circle_public',
+      });
+
+      celebration = {
+        id: celebrationId,
+        birthdayId,
+        celebrationYear: year,
+        title,
+        eventDate,
+        location: null,
+        visibility: 'circle_public',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      };
+    }
+
+    // Listar fotos activas de esta celebración
+    const photos = await db
+      .select({
+        id: eventPhotos.id,
+        celebrationId: eventPhotos.celebrationId,
+        secureUrl: eventPhotos.secureUrl,
+        caption: eventPhotos.caption,
+        uploadedBy: eventPhotos.uploadedBy,
+        uploaderName: users.fullName,
+        likesCount: eventPhotos.likesCount,
+        commentsCount: eventPhotos.commentsCount,
+        createdAt: eventPhotos.createdAt,
+      })
+      .from(eventPhotos)
+      .innerJoin(users, eq(users.id, eventPhotos.uploadedBy))
+      .where(
+        and(
+          eq(eventPhotos.celebrationId, celebration.id),
+          eq(eventPhotos.moderationStatus, 'approved'),
+          sql`${eventPhotos.deletedAt} IS NULL`
+        )
+      )
+      .orderBy(sql`${eventPhotos.createdAt} DESC`);
+
+    return reply.send({
+      celebration,
+      birthday,
+      photos,
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // FEED GLOBAL DE FOTOS DE RECUERDOS (DE TODOS LOS CÍRCULOS DEL USUARIO)
+  // ---------------------------------------------------------------------------
+  fastify.get('/photos/feed', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const userId = request.user.id;
+
+    const userCircles = await db
+      .select({ circleId: circleMembers.circleId })
+      .from(circleMembers)
+      .where(eq(circleMembers.userId, userId));
+
+    if (userCircles.length === 0) {
+      return reply.send({ photos: [] });
+    }
+
+    const circleIds = userCircles.map((c) => c.circleId);
+
+    const photos = await db
+      .select({
+        id: eventPhotos.id,
+        celebrationId: eventPhotos.celebrationId,
+        celebrationTitle: celebrations.title,
+        secureUrl: eventPhotos.secureUrl,
+        caption: eventPhotos.caption,
+        uploadedBy: eventPhotos.uploadedBy,
+        uploaderName: users.fullName,
+        likesCount: eventPhotos.likesCount,
+        commentsCount: eventPhotos.commentsCount,
+        createdAt: eventPhotos.createdAt,
+      })
+      .from(eventPhotos)
+      .innerJoin(celebrations, eq(celebrations.id, eventPhotos.celebrationId))
+      .innerJoin(birthdays, eq(birthdays.id, celebrations.birthdayId))
+      .innerJoin(users, eq(users.id, eventPhotos.uploadedBy))
+      .where(
+        and(
+          inArray(birthdays.circleId, circleIds),
+          eq(eventPhotos.moderationStatus, 'approved'),
+          sql`${eventPhotos.deletedAt} IS NULL`
+        )
+      )
+      .orderBy(sql`${eventPhotos.createdAt} DESC`)
+      .limit(30);
+
+    return reply.send({ photos });
+  });
+
+  // ---------------------------------------------------------------------------
   // GENERAR FIRMA CRIPTOGRÁFICA PARA SUBIDA DIRECTA A CLOUDINARY
   // ---------------------------------------------------------------------------
   fastify.post('/sign-upload', { preHandler: [fastify.authenticate] }, async (request, reply) => {
@@ -39,7 +178,7 @@ export const mediaRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.status(400).send({ error: 'Validation Error', details: parseResult.error.errors });
     }
 
-    const { celebrationId, mimeType, fileSizeBytes, containsMinors } = parseResult.data;
+    const { celebrationId } = parseResult.data;
     const userId = request.user.id;
 
     // 1. Obtener la celebración y su círculo
@@ -71,10 +210,8 @@ export const mediaRoutes: FastifyPluginAsync = async (fastify) => {
     const folder = `festy/celebrations/${celebrationId}`;
 
     const paramsToSign: Record<string, string | number> = {
-      timestamp,
       folder,
-      // Aplicar transformaciones al vuelo para optimización
-      transformation: 'f_auto,q_auto',
+      timestamp,
     };
 
     const signature = cloudinary.utils.api_sign_request(

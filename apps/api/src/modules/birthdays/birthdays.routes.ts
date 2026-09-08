@@ -1,9 +1,10 @@
 import { FastifyPluginAsync } from 'fastify';
 import crypto from 'crypto';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import {
   getDbConnection,
   birthdays,
+  circles,
   circleMembers,
   birthdayClaimRequests,
   users,
@@ -18,7 +19,56 @@ export const birthdayRoutes: FastifyPluginAsync = async (fastify) => {
   const db = getDbConnection();
 
   // ---------------------------------------------------------------------------
-  // LISTAR CUMPLEAÑOS DE UN CÍRCULO
+  // FEED GLOBAL: TODOS LOS CUMPLEAÑOS DE LOS CÍRCULOS DEL USUARIO
+  // ---------------------------------------------------------------------------
+  fastify.get('/feed', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const userId = request.user.id;
+
+    const userCircles = await db
+      .select({
+        circleId: circleMembers.circleId,
+        circleName: circles.name,
+      })
+      .from(circleMembers)
+      .innerJoin(circles, eq(circles.id, circleMembers.circleId))
+      .where(and(eq(circleMembers.userId, userId), sql`${circles.deletedAt} IS NULL`));
+
+    if (userCircles.length === 0) {
+      return reply.send({ birthdays: [] });
+    }
+
+    const circleIds = userCircles.map((c) => c.circleId);
+    const circleMap = new Map(userCircles.map((c) => [c.circleId, c.circleName]));
+
+    const allBirthdays = await db
+      .select({
+        id: birthdays.id,
+        circleId: birthdays.circleId,
+        fullName: birthdays.fullName,
+        contactEmail: birthdays.contactEmail,
+        birthDay: birthdays.birthDay,
+        birthMonth: birthdays.birthMonth,
+        birthYear: birthdays.birthYear,
+        isMinor: birthdays.isMinor,
+        isClaimed: birthdays.isClaimed,
+        linkedUserId: birthdays.linkedUserId,
+        notes: birthdays.notes,
+        createdAt: birthdays.createdAt,
+      })
+      .from(birthdays)
+      .where(and(inArray(birthdays.circleId, circleIds), sql`${birthdays.deletedAt} IS NULL`))
+      .orderBy(birthdays.birthMonth, birthdays.birthDay);
+
+    const enriched = allBirthdays.map((b) => ({
+      ...b,
+      circleName: circleMap.get(b.circleId) || 'Círculo',
+    }));
+
+    return reply.send({ birthdays: enriched });
+  });
+
+  // ---------------------------------------------------------------------------
+  // LISTAR CUMPLEAÑOS DE UN CÍRCULO ESPECÍFICO
   // ---------------------------------------------------------------------------
   fastify.get('/circle/:circleId', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     const { circleId } = request.params as { circleId: string };

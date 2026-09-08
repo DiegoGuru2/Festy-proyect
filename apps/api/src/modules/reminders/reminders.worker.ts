@@ -1,16 +1,20 @@
 import { DateTime } from 'luxon';
 import crypto from 'crypto';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import {
   getDbConnection,
   users,
   userNotificationPrefs,
   circleMembers,
+  circles,
   birthdays,
   reminderDispatchLogs,
-  userDeviceTokens,
 } from '@festy/db';
+import { sendBirthdayReminderEmail } from '../email/email.service';
 
+/**
+ * 1. Despacho horario basado en zona horaria y preferencias del usuario
+ */
 export async function dispatchHourlyReminders(): Promise<{ evaluatedUsers: number; queuedReminders: number }> {
   const db = getDbConnection();
   const nowUtc = DateTime.utc();
@@ -48,7 +52,6 @@ export async function dispatchHourlyReminders(): Promise<{ evaluatedUsers: numbe
         and(
           eq(users.timezone, timezone),
           sql`${users.deletedAt} IS NULL`,
-          // Evaluar si la hora coincide (ej: 09:00:00)
           sql`HOUR(${userNotificationPrefs.preferredTime}) = ${currentHour}`
         )
       );
@@ -56,7 +59,6 @@ export async function dispatchHourlyReminders(): Promise<{ evaluatedUsers: numbe
     evaluatedUsers += candidateUsers.length;
 
     for (const candidate of candidateUsers) {
-      // Calcular la fecha objetivo de cumpleaños (hoy + daysBefore)
       const targetDate = userLocalTime.plus({ days: candidate.daysBefore });
       const targetDay = targetDate.day;
       const targetMonth = targetDate.month;
@@ -70,9 +72,11 @@ export async function dispatchHourlyReminders(): Promise<{ evaluatedUsers: numbe
           birthDay: birthdays.birthDay,
           birthMonth: birthdays.birthMonth,
           circleId: birthdays.circleId,
+          circleName: circles.name,
         })
         .from(circleMembers)
         .innerJoin(birthdays, eq(birthdays.circleId, circleMembers.circleId))
+        .innerJoin(circles, eq(circles.id, circleMembers.circleId))
         .where(
           and(
             eq(circleMembers.userId, candidate.userId),
@@ -83,37 +87,194 @@ export async function dispatchHourlyReminders(): Promise<{ evaluatedUsers: numbe
         );
 
       for (const bday of upcomingBirthdays) {
-        // 4. Comprobar deduplicación para evitar envíos duplicados en reminder_dispatch_logs
-        const alreadySent = await db.query.reminderDispatchLogs.findFirst({
-          where: and(
-            eq(reminderDispatchLogs.userId, candidate.userId),
-            eq(reminderDispatchLogs.birthdayId, bday.birthdayId),
-            eq(reminderDispatchLogs.year, targetYear),
-            eq(reminderDispatchLogs.daysBefore, candidate.daysBefore),
-            eq(reminderDispatchLogs.channel, 'push')
-          ),
-        });
-
-        if (!alreadySent) {
-          // Registrar despacho y encolar notificación
-          await db.insert(reminderDispatchLogs).values({
-            id: crypto.randomUUID(),
-            userId: candidate.userId,
-            birthdayId: bday.birthdayId,
-            celebrationId: null,
-            celebrationIdNorm: 'none',
-            year: targetYear,
-            daysBefore: candidate.daysBefore,
-            channel: 'push',
-            status: 'sent',
-            sentAt: new Date(),
+        // Despacho por Correo si está habilitado
+        if (candidate.enableEmail && candidate.email) {
+          const emailSent = await db.query.reminderDispatchLogs.findFirst({
+            where: and(
+              eq(reminderDispatchLogs.userId, candidate.userId),
+              eq(reminderDispatchLogs.birthdayId, bday.birthdayId),
+              eq(reminderDispatchLogs.year, targetYear),
+              eq(reminderDispatchLogs.daysBefore, candidate.daysBefore),
+              eq(reminderDispatchLogs.channel, 'email')
+            ),
           });
 
-          queuedReminders++;
+          if (!emailSent) {
+            try {
+              await sendBirthdayReminderEmail({
+                to: candidate.email,
+                recipientName: candidate.fullName,
+                birthdayPersonName: bday.fullName,
+                birthDay: bday.birthDay,
+                birthMonth: bday.birthMonth,
+                daysRemaining: candidate.daysBefore,
+                circleName: bday.circleName || 'Familia',
+              });
+
+              await db.insert(reminderDispatchLogs).values({
+                id: crypto.randomUUID(),
+                userId: candidate.userId,
+                birthdayId: bday.birthdayId,
+                celebrationId: 'none',
+                year: targetYear,
+                daysBefore: candidate.daysBefore,
+                channel: 'email',
+                status: 'sent',
+                sentAt: new Date(),
+              });
+
+              queuedReminders++;
+            } catch (err: any) {
+              console.error(`[Reminder Error] Falló envío de correo a ${candidate.email}:`, err.message);
+            }
+          }
+        }
+
+        // Despacho por Push
+        if (candidate.enablePush) {
+          const pushSent = await db.query.reminderDispatchLogs.findFirst({
+            where: and(
+              eq(reminderDispatchLogs.userId, candidate.userId),
+              eq(reminderDispatchLogs.birthdayId, bday.birthdayId),
+              eq(reminderDispatchLogs.year, targetYear),
+              eq(reminderDispatchLogs.daysBefore, candidate.daysBefore),
+              eq(reminderDispatchLogs.channel, 'push')
+            ),
+          });
+
+          if (!pushSent) {
+            await db.insert(reminderDispatchLogs).values({
+              id: crypto.randomUUID(),
+              userId: candidate.userId,
+              birthdayId: bday.birthdayId,
+              celebrationId: 'none',
+              year: targetYear,
+              daysBefore: candidate.daysBefore,
+              channel: 'push',
+              status: 'sent',
+              sentAt: new Date(),
+            });
+            queuedReminders++;
+          }
         }
       }
     }
   }
 
   return { evaluatedUsers, queuedReminders };
+}
+
+/**
+ * 2. Despacho global inteligente: evalúa cumpleaños que ocurren en los próximos X días (0..7 días)
+ * para todos los usuarios activos y envía correos recordatorios automáticamente.
+ */
+export async function checkAndDispatchUpcomingBirthdayEmails(daysAheadList: number[] = [0, 1, 3, 7]): Promise<{
+  checkedUsers: number;
+  emailsSent: number;
+  details: any[];
+}> {
+  const db = getDbConnection();
+  const now = DateTime.now();
+  const currentYear = now.year;
+
+  let emailsSent = 0;
+  const details: any[] = [];
+
+  // Obtener usuarios activos con sus círculos
+  const members = await db
+    .select({
+      userId: users.id,
+      email: users.email,
+      fullName: users.fullName,
+      circleId: circleMembers.circleId,
+      circleName: circles.name,
+      enableEmail: userNotificationPrefs.enableEmail,
+    })
+    .from(circleMembers)
+    .innerJoin(users, eq(users.id, circleMembers.userId))
+    .innerJoin(circles, eq(circles.id, circleMembers.circleId))
+    .leftJoin(userNotificationPrefs, eq(userNotificationPrefs.userId, users.id))
+    .where(sql`${users.deletedAt} IS NULL`);
+
+  for (const daysAhead of daysAheadList) {
+    const targetDate = now.plus({ days: daysAhead });
+    const targetDay = targetDate.day;
+    const targetMonth = targetDate.month;
+
+    for (const member of members) {
+      // Si el usuario no tiene desactivado el correo (null o true = true)
+      const emailAllowed = member.enableEmail !== false;
+      if (!emailAllowed || !member.email) continue;
+
+      // Buscar cumpleaños en el círculo del usuario para la fecha objetivo
+      const bdays = await db
+        .select({
+          birthdayId: birthdays.id,
+          fullName: birthdays.fullName,
+          birthDay: birthdays.birthDay,
+          birthMonth: birthdays.birthMonth,
+        })
+        .from(birthdays)
+        .where(
+          and(
+            eq(birthdays.circleId, member.circleId),
+            eq(birthdays.birthDay, targetDay),
+            eq(birthdays.birthMonth, targetMonth),
+            sql`${birthdays.deletedAt} IS NULL`
+          )
+        );
+
+      for (const bday of bdays) {
+        // Evitar enviar recordatorio al mismo cumpleañero sobre sí mismo si es el mismo nombre/usuario
+        // Verificar si ya se envió el recordatorio para este año y daysAhead
+        const alreadySent = await db.query.reminderDispatchLogs.findFirst({
+          where: and(
+            eq(reminderDispatchLogs.userId, member.userId),
+            eq(reminderDispatchLogs.birthdayId, bday.birthdayId),
+            eq(reminderDispatchLogs.year, currentYear),
+            eq(reminderDispatchLogs.daysBefore, daysAhead),
+            eq(reminderDispatchLogs.channel, 'email')
+          ),
+        });
+
+        if (!alreadySent) {
+          try {
+            await sendBirthdayReminderEmail({
+              to: member.email,
+              recipientName: member.fullName,
+              birthdayPersonName: bday.fullName,
+              birthDay: bday.birthDay,
+              birthMonth: bday.birthMonth,
+              daysRemaining: daysAhead,
+              circleName: member.circleName || 'Familia',
+            });
+
+            await db.insert(reminderDispatchLogs).values({
+              id: crypto.randomUUID(),
+              userId: member.userId,
+              birthdayId: bday.birthdayId,
+              celebrationId: 'none',
+              year: currentYear,
+              daysBefore: daysAhead,
+              channel: 'email',
+              status: 'sent',
+              sentAt: new Date(),
+            });
+
+            emailsSent++;
+            details.push({
+              to: member.email,
+              birthdayPerson: bday.fullName,
+              daysAhead,
+              circle: member.circleName,
+            });
+          } catch (err: any) {
+            console.error(`[Reminder Error] Falló envío de recordatorio a ${member.email}:`, err.message);
+          }
+        }
+      }
+    }
+  }
+
+  return { checkedUsers: members.length, emailsSent, details };
 }

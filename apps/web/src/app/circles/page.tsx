@@ -17,6 +17,7 @@ import {
   ArrowLeft,
   LogOut,
   Sparkles,
+  Settings,
 } from 'lucide-react';
 
 interface Circle {
@@ -205,20 +206,25 @@ export default function CirclesPage() {
             Organiza tus cumpleaños por grupos: Familia, Amigos, Trabajo...
           </p>
         </div>
-        <button onClick={handleLogout} className="btn-secondary" style={{ padding: '8px 14px' }}>
-          <LogOut size={14} /> Salir
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button onClick={() => router.push('/profile')} className="btn-secondary" style={{ padding: '8px 14px' }}>
+            <Settings size={14} /> Mi Perfil
+          </button>
+          <button onClick={handleLogout} className="btn-secondary" style={{ padding: '8px 14px' }}>
+            <LogOut size={14} /> Salir
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
       {error && (
-        <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', marginBottom: '16px', color: '#FCA5A5', fontSize: '0.85rem' }}>
+        <div style={{ background: 'rgba(254, 226, 226, 0.9)', border: '1px solid rgba(248, 113, 113, 0.5)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', marginBottom: '16px', color: '#B91C1C', fontSize: '0.88rem', fontWeight: 600 }}>
           ⚠️ {error}
-          <button onClick={() => setError('')} style={{ float: 'right', background: 'none', border: 'none', color: '#FCA5A5', cursor: 'pointer' }}>✕</button>
+          <button onClick={() => setError('')} style={{ float: 'right', background: 'none', border: 'none', color: '#B91C1C', cursor: 'pointer', fontWeight: 700 }}>✕</button>
         </div>
       )}
       {success && (
-        <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', marginBottom: '16px', color: '#6EE7B7', fontSize: '0.85rem' }}>
+        <div style={{ background: 'rgba(209, 250, 229, 0.9)', border: '1px solid rgba(110, 231, 183, 0.6)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', marginBottom: '16px', color: '#065F46', fontSize: '0.88rem', fontWeight: 600 }}>
           ✅ {success}
         </div>
       )}
@@ -325,8 +331,8 @@ export default function CirclesPage() {
             <div style={{ display: 'flex', gap: '8px' }}>
               <code style={{
                 flex: 1, padding: '14px 20px',
-                background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.3)',
-                borderRadius: 'var(--radius-sm)', color: '#C4B5FD',
+                background: 'rgba(237, 233, 254, 0.9)', border: '1px solid rgba(196, 181, 253, 0.8)',
+                borderRadius: 'var(--radius-sm)', color: '#5B21B6',
                 fontSize: '1.3rem', fontWeight: 800, letterSpacing: '2px',
                 textAlign: 'center', fontFamily: 'monospace',
               }}>

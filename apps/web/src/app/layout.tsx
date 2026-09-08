@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
   title: 'Festy | Calendario de Cumpleaños & Galería Colaborativa',
@@ -10,6 +12,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  icons: {
+    icon: '/logo.png',
+  },
 };
 
 export default function RootLayout({
@@ -19,27 +24,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body>
-        <header className="navbar" id="main-navbar">
-          <div className="nav-brand">
-            <span style={{ fontSize: '1.8rem' }}>🎂</span>
-            <span className="gradient-text">Festy</span>
-            <span className="nav-badge">v2.3</span>
-          </div>
-
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <button className="btn-secondary" id="btn-circles">
-              👥 Círculos
-            </button>
-            <button className="btn-primary" id="btn-new-birthday">
-              ✨ Nuevo Cumpleaños
-            </button>
-          </nav>
-        </header>
-
-        <main id="app-root">
+      <body style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Navbar />
+        <main id="app-root" style={{ flex: 1 }}>
           {children}
         </main>
+        <Footer />
       </body>
     </html>
   );

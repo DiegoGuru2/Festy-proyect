@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiFetch, getToken, getUser, setUser, removeToken } from '@/lib/api';
+import { apiFetch, getToken, setToken, getUser, setUser, removeToken } from '@/lib/api';
+
 import {
   User,
   Lock,

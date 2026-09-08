@@ -96,16 +96,17 @@ export default function HomePage() {
   const [muroFilter, setMuroFilter] = useState<string>('Todos');
 
   // Lightbox / Full-screen Photo Viewer State with Navigation
-  const [lightboxPhoto, setLightboxPhoto] = useState<CelebrationPhoto | null>(null);
-  const [lightboxList, setLightboxList] = useState<CelebrationPhoto[]>([]);
+  const [lightboxPhoto, setLightboxPhoto] = useState<any | null>(null);
+  const [lightboxList, setLightboxList] = useState<any[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState<number>(0);
 
-  const openLightbox = (photo: CelebrationPhoto, list: CelebrationPhoto[]) => {
+  const openLightbox = (photo: any, list: any[]) => {
     const idx = list.findIndex((p) => p.id === photo.id);
     setLightboxList(list);
     setLightboxIndex(idx >= 0 ? idx : 0);
     setLightboxPhoto(photo);
   };
+
 
   const handleNextPhoto = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -982,9 +983,10 @@ export default function HomePage() {
                     : displayPhotos.filter(
                         (p) =>
                           p.celebrationTitle?.toLowerCase().includes(circleFilterInModal.toLowerCase()) ||
-                          p.caption?.toLowerCase().includes(circleFilterInModal.toLowerCase()) ||
+                          (p as any).caption?.toLowerCase().includes(circleFilterInModal.toLowerCase()) ||
                           p.uploaderName?.toLowerCase().includes(circleFilterInModal.toLowerCase())
                       );
+
 
                   if (filteredCirclePhotos.length === 0) {
                     return (
@@ -1019,7 +1021,7 @@ export default function HomePage() {
                           >
                             <img
                               src={photo.secureUrl}
-                              alt={photo.caption || 'Foto del evento'}
+                              alt={(photo as any).caption || 'Foto del evento'}
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
                             {photo.celebrationTitle && (
@@ -1044,11 +1046,12 @@ export default function HomePage() {
                             )}
                           </div>
                           <div style={{ padding: '10px 12px' }}>
-                            {photo.caption && (
+                            {(photo as any).caption && (
                               <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {photo.caption}
+                                {(photo as any).caption}
                               </p>
                             )}
+
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--text-dim)' }}>
                               <span>Por {photo.uploaderName.split(' ')[0]}</span>
                               <button
@@ -1584,7 +1587,7 @@ export default function HomePage() {
             : displayPhotos.filter(
                 (p) =>
                   p.celebrationTitle?.toLowerCase().includes(muroFilter.toLowerCase()) ||
-                  p.caption?.toLowerCase().includes(muroFilter.toLowerCase()) ||
+                  (p as any).caption?.toLowerCase().includes(muroFilter.toLowerCase()) ||
                   p.uploaderName?.toLowerCase().includes(muroFilter.toLowerCase())
               );
 
@@ -1622,11 +1625,12 @@ export default function HomePage() {
                   onClick={() => openLightbox(photo, filteredMuroPhotos)}
                   style={{ cursor: 'pointer' }}
                 >
-                  <img src={photo.secureUrl} alt={photo.caption || photo.celebrationTitle || 'Foto'} />
+                  <img src={photo.secureUrl} alt={(photo as any).caption || photo.celebrationTitle || 'Foto'} />
                   <div className="photo-overlay">
                     <h4 style={{ color: '#fff', fontSize: '0.95rem', fontWeight: 700, marginBottom: '4px' }}>
-                      {photo.caption || photo.celebrationTitle || 'Celebración'}
+                      {(photo as any).caption || photo.celebrationTitle || 'Celebración'}
                     </h4>
+
                     <p style={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: '0.75rem', marginBottom: '10px' }}>
                       Por {photo.uploaderName}
                     </p>

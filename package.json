@@ -1,0 +1,27 @@
+{
+  "name": "festy",
+  "version": "1.0.0",
+  "description": "Plataforma de calendario de cumpleaños y galería colaborativa de fotos",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm --workspace=@festy/api run dev",
+    "dev:web": "npm --workspace=@festy/web run dev",
+    "build": "npm run build --workspaces --if-present",
+    "db:generate": "npm --workspace=@festy/db run generate",
+    "db:migrate": "npm --workspace=@festy/db run migrate",
+    "db:push": "npm --workspace=@festy/db run push"
+  },
+  "keywords": [
+    "birthday-calendar",
+    "tidb",
+    "cloudinary",
+    "flutter",
+    "nextjs"
+  ],
+  "author": "Festy Team",
+  "license": "UNLICENSED"
+}

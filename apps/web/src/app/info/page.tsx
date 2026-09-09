@@ -132,11 +132,15 @@ export default function InfoPage() {
           <h1
             className="hero-headline"
             style={{
-              fontSize: '3rem',
+              fontSize: 'clamp(2.1rem, 3.8vw, 3rem)',
               fontWeight: 800,
-              lineHeight: 1.15,
+              lineHeight: 1.2,
               marginBottom: '20px',
               letterSpacing: '-1px',
+              maxWidth: '750px',
+              margin: '0 auto 20px',
+              position: 'relative',
+              zIndex: 4,
             }}
           >
             Celebra, recuerda y comparte <br />
@@ -639,32 +643,34 @@ export default function InfoPage() {
         }
 
         .particle-balloon {
-          top: 15%;
-          left: 6%;
-          font-size: 2.2rem;
+          top: 10%;
+          left: 3%;
+          font-size: 1.8rem;
+          opacity: 0.5;
           animation-duration: 5s;
           animation-delay: 0s;
         }
 
         .particle-cake {
-          top: 70%;
-          left: 8%;
+          top: 72%;
+          left: 6%;
           font-size: 2rem;
           animation-duration: 6.5s;
           animation-delay: -2s;
         }
 
         .particle-gift {
-          top: 18%;
-          right: 7%;
-          font-size: 2.1rem;
+          top: 12%;
+          right: 4%;
+          font-size: 1.8rem;
+          opacity: 0.5;
           animation-duration: 5.8s;
           animation-delay: -1s;
         }
 
         .particle-star {
           top: 75%;
-          right: 9%;
+          right: 8%;
           font-size: 1.8rem;
           animation-duration: 4.8s;
           animation-delay: -3s;
@@ -672,16 +678,18 @@ export default function InfoPage() {
 
         .particle-heart {
           top: 45%;
-          left: 3%;
-          font-size: 1.6rem;
+          left: 2%;
+          font-size: 1.5rem;
+          opacity: 0.6;
           animation-duration: 7s;
           animation-delay: -1.5s;
         }
 
         .particle-sparkle {
           top: 48%;
-          right: 4%;
-          font-size: 1.7rem;
+          right: 3%;
+          font-size: 1.5rem;
+          opacity: 0.6;
           animation-duration: 5.2s;
           animation-delay: -2.5s;
         }
@@ -692,19 +700,19 @@ export default function InfoPage() {
           100% { transform: translateY(8px) rotate(-8deg); }
         }
 
-        /* Hero Floating Stickers / Badges */
+        /* Hero Floating Stickers / Badges - Positioned away from headline */
         .hero-sticker {
           position: absolute;
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(221, 214, 254, 0.8);
-          padding: 10px 16px;
-          border-radius: 18px;
+          background: rgba(255, 255, 255, 0.96);
+          backdrop-filter: blur(14px);
+          border: 1px solid rgba(221, 214, 254, 0.85);
+          padding: 8px 14px;
+          border-radius: 16px;
           display: flex;
           align-items: center;
-          gap: 12px;
-          box-shadow: 0 10px 25px rgba(144, 97, 249, 0.14);
-          z-index: 2;
+          gap: 10px;
+          box-shadow: 0 12px 28px rgba(144, 97, 249, 0.12);
+          z-index: 5;
           transition: transform 0.3s ease;
         }
 
@@ -713,18 +721,18 @@ export default function InfoPage() {
         }
 
         .hero-sticker-left {
-          left: 32px;
-          top: 42%;
+          left: 28px;
+          top: 32px;
           animation: floatStickerLeft 6s ease-in-out infinite alternate;
         }
 
         .hero-sticker-right {
-          right: 32px;
-          top: 45%;
+          right: 28px;
+          top: 32px;
           animation: floatStickerRight 6.5s ease-in-out infinite alternate;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1120px) {
           .hero-sticker {
             display: none;
           }

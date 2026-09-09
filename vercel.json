@@ -1,9 +1,10 @@
 {
   "version": 2,
+  "buildCommand": "npm run build:api",
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/api"
+      "destination": "/api/index"
     }
   ]
 }

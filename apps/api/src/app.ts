@@ -15,17 +15,21 @@ import { getDbConnection, users } from '@festy/db';
 import { sql } from 'drizzle-orm';
 
 export async function buildApp() {
+  const isProd = process.env.NODE_ENV === 'production';
   const app = Fastify({
-    logger: {
-      transport: {
-        target: 'pino-pretty',
-        options: {
-          translateTime: 'HH:MM:ss Z',
-          ignore: 'pid,hostname',
+    logger: isProd
+      ? true
+      : {
+          transport: {
+            target: 'pino-pretty',
+            options: {
+              translateTime: 'HH:MM:ss Z',
+              ignore: 'pid,hostname',
+            },
+          },
         },
-      },
-    },
   });
+
 
   // CORS
   await app.register(cors, {
@@ -81,13 +85,17 @@ export async function buildApp() {
     });
   });
 
-  // Ejecutar verificación periódica en segundo plano cada 60 minutos
-  setInterval(() => {
-    app.log.info('[Scheduler] Ejecutando verificación periódica de cumpleaños...');
-    checkAndDispatchUpcomingBirthdayEmails([0, 1, 3, 7]).catch((err) => {
-      app.log.error(`[Scheduler Error] ${err.message}`);
-    });
-  }, 60 * 60 * 1000);
+  // Ejecutar verificación periódica en servidor persistente (no bloquea serverless)
+  if (process.env.VERCEL !== '1') {
+    const timer = setInterval(() => {
+      app.log.info('[Scheduler] Ejecutando verificación periódica de cumpleaños...');
+      checkAndDispatchUpcomingBirthdayEmails([0, 1, 3, 7]).catch((err) => {
+        app.log.error(`[Scheduler Error] ${err.message}`);
+      });
+    }, 60 * 60 * 1000);
+    timer.unref();
+  }
+
 
   // Registro de módulos
   await app.register(authRoutes, { prefix: '/api/auth' });

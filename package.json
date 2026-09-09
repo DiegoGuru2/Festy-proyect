@@ -10,11 +10,14 @@
   "scripts": {
     "dev:api": "npm --workspace=@festy/api run dev",
     "dev:web": "npm --workspace=@festy/web run dev",
-    "build": "npm run build --workspaces --if-present",
+    "build:api": "npm --workspace=@festy/shared run build && npm --workspace=@festy/db run build && npm --workspace=@festy/api run build && mkdir -p public",
+    "build:web": "npm --workspace=@festy/shared run build && npm --workspace=@festy/web run build",
+    "build": "npm --workspace=@festy/shared run build && npm --workspace=@festy/db run build && npm --workspace=@festy/api run build && npm --workspace=@festy/web run build",
     "db:generate": "npm --workspace=@festy/db run generate",
     "db:migrate": "npm --workspace=@festy/db run migrate",
     "db:push": "npm --workspace=@festy/db run push"
   },
+
   "keywords": [
     "birthday-calendar",
     "tidb",

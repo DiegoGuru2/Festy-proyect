@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiFetch, setToken, setUser } from '@/lib/api';
-import { Sparkles, Calendar, Lock, Mail, User, Link as LinkIcon, ArrowRight } from 'lucide-react';
+import { Sparkles, Calendar, Lock, Mail, User, Link as LinkIcon, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 function LoginFormContent() {
   const router = useRouter();
@@ -11,6 +11,7 @@ function LoginFormContent() {
   const [isRegister, setIsRegister] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Form fields
   const [email, setEmail] = useState('');
@@ -359,34 +360,58 @@ function LoginFormContent() {
                     >
                       Contraseña
                     </label>
-                    <input
-                      id="password"
-                      type="password"
-                      placeholder="Mínimo 8 caracteres"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={8}
-                      style={{
-                        width: '100%',
-                        padding: '12px 14px',
-                        background: '#ffffff',
-                        border: '1px solid var(--border-glass)',
-                        borderRadius: '12px',
-                        color: 'var(--text-main)',
-                        fontSize: '0.95rem',
-                        outline: 'none',
-                        transition: 'border-color 0.2s, box-shadow 0.2s',
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = 'var(--accent-primary)';
-                        e.target.style.boxShadow = '0 0 0 3px rgba(144, 97, 249, 0.15)';
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = 'var(--border-glass)';
-                        e.target.style.boxShadow = 'none';
-                      }}
-                    />
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <input
+                        id="password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Mínimo 8 caracteres"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        minLength={8}
+                        style={{
+                          width: '100%',
+                          padding: '12px 46px 12px 14px',
+                          background: '#ffffff',
+                          border: '1px solid var(--border-glass)',
+                          borderRadius: '12px',
+                          color: 'var(--text-main)',
+                          fontSize: '0.95rem',
+                          outline: 'none',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = 'var(--accent-primary)';
+                          e.target.style.boxShadow = '0 0 0 3px rgba(144, 97, 249, 0.15)';
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = 'var(--border-glass)';
+                          e.target.style.boxShadow = 'none';
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        style={{
+                          position: 'absolute',
+                          right: '12px',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: showPassword ? 'var(--accent-primary)' : 'var(--text-muted)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '4px',
+                          borderRadius: '8px',
+                          transition: 'color 0.15s',
+                        }}
+                        title={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                        aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -567,27 +592,51 @@ function LoginFormContent() {
                 >
                   Contraseña
                 </label>
-                <input
-                  id="password"
-                  type="password"
-                  placeholder="Tu contraseña secreta"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    background: 'var(--bg-glass)',
-                    border: '1px solid var(--border-glass)',
-                    borderRadius: '12px',
-                    color: 'var(--text-main)',
-                    fontSize: '0.95rem',
-                    outline: 'none',
-                    transition: 'border-color 0.2s',
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = 'var(--accent-primary)')}
-                  onBlur={(e) => (e.target.style.borderColor = 'var(--border-glass)')}
-                />
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Tu contraseña secreta"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '12px 46px 12px 16px',
+                      background: 'var(--bg-glass)',
+                      border: '1px solid var(--border-glass)',
+                      borderRadius: '12px',
+                      color: 'var(--text-main)',
+                      fontSize: '0.95rem',
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = 'var(--accent-primary)')}
+                    onBlur={(e) => (e.target.style.borderColor = 'var(--border-glass)')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: showPassword ? 'var(--accent-primary)' : 'var(--text-muted)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '4px',
+                      borderRadius: '8px',
+                      transition: 'color 0.15s',
+                    }}
+                    title={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               <button

@@ -432,43 +432,29 @@ export default function HomePage() {
 
   return (
     <div className="main-container">
-      {/* Top Actions Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      {/* Top Greeting & Fast Action */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span style={{ fontSize: '1.05rem', color: 'var(--text-muted)' }}>
-            👋 Hola, <strong style={{ color: 'var(--text-main)', fontWeight: 800 }}>{user?.fullName || 'Usuario'}</strong>
+            👋 ¡Hola, <strong style={{ color: 'var(--text-main)', fontWeight: 800 }}>{user?.fullName || 'Familia'}</strong>!
           </span>
-          <span className="badge badge-purple" style={{ fontSize: '0.75rem' }}>
-            🎂 TiDB + Cloudinary
+          <span className="badge badge-purple" style={{ fontSize: '0.74rem' }}>
+            🎂 Calendario Activo
           </span>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            onClick={() => {
-              const el = document.getElementById('seccion-recuerdos');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="btn-secondary"
-            style={{ fontSize: '0.85rem' }}
-          >
-            <Camera size={15} /> Ver Galería Familiar
-          </button>
-          <button onClick={() => router.push('/circles')} className="btn-secondary" style={{ fontSize: '0.85rem' }}>
-            <Users size={15} /> Mis Círculos
-          </button>
-          <button onClick={() => router.push('/profile')} className="btn-secondary" style={{ fontSize: '0.85rem' }}>
-            <Settings size={15} /> Mi Perfil
-          </button>
-          <button onClick={handleLogout} className="btn-secondary" style={{ fontSize: '0.85rem' }}>
-            <LogOut size={15} /> Salir
-          </button>
-        </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="btn-primary"
+          style={{ fontSize: '0.86rem', padding: '9px 18px' }}
+        >
+          <Plus size={16} /> Agregar Cumpleaños
+        </button>
       </div>
 
       {/* Hero Welcome Banner */}
       <section className="glass-panel" style={{ padding: '32px', marginBottom: '32px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ maxWidth: '680px', position: 'relative', zIndex: 2 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <span className="badge badge-purple">
               <Sparkles size={14} /> Calendario Colaborativo
             </span>
@@ -476,7 +462,7 @@ export default function HomePage() {
               <ShieldCheck size={14} /> Álbumes de Recuerdos Familiares
             </span>
           </div>
-          <h1 style={{ fontSize: '2.4rem', fontWeight: 800, lineHeight: 1.25, marginBottom: '14px' }}>
+          <h1 className="hero-heading" style={{ fontSize: '2.4rem', fontWeight: 800, lineHeight: 1.25, marginBottom: '14px' }}>
             Toca a un cumpleañero y <span className="gradient-text">mira o sube fotos</span>.
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: 1.6, marginBottom: '22px' }}>

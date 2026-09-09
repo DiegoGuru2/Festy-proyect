@@ -406,8 +406,15 @@ main {
   .main-container {
     padding: 16px 12px;
   }
+  .glass-panel {
+    padding: 20px 16px !important;
+  }
+  .hero-heading {
+    font-size: 1.7rem !important;
+    line-height: 1.25 !important;
+  }
   .navbar {
-    padding: 0 16px;
+    padding: 0 14px;
     height: 60px;
   }
   .calendar-grid {
@@ -442,6 +449,12 @@ main {
 }
 
 @media (max-width: 520px) {
+  .glass-panel {
+    padding: 16px 12px !important;
+  }
+  .hero-heading {
+    font-size: 1.42rem !important;
+  }
   .nav-text-hide {
     display: none !important;
   }

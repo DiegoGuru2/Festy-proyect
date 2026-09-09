@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { apiFetch, setToken, setUser } from '@/lib/api';
+import { Sparkles, Calendar, Lock, Mail, User, Link as LinkIcon, ArrowRight } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginFormContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isRegister, setIsRegister] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -14,14 +16,26 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [birthDate, setBirthDate] = useState<string>('1995-09-15');
+  const [birthDate, setBirthDate] = useState<string>('2000-09-15');
   const [birthDay, setBirthDay] = useState<number>(15);
   const [birthMonth, setBirthMonth] = useState<number>(9);
-  const [birthYear, setBirthYear] = useState<string>('1995');
+  const [birthYear, setBirthYear] = useState<string>('2000');
   const [inviteCode, setInviteCode] = useState<string>('');
   const [timezone, setTimezone] = useState(
-    Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Guayaquil'
+    typeof Intl !== 'undefined' && Intl.DateTimeFormat
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Guayaquil'
+      : 'America/Guayaquil'
   );
+
+  // Sync tab with URL query parameter
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'register' || searchParams.get('register') === 'true') {
+      setIsRegister(true);
+    } else if (tab === 'login') {
+      setIsRegister(false);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,269 +96,499 @@ export default function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '24px',
+        padding: '32px 16px',
+        transition: 'all 0.3s ease',
       }}
     >
       <div
         className="glass-panel"
         style={{
           width: '100%',
-          maxWidth: '460px',
-          padding: '48px 40px',
+          maxWidth: isRegister ? '880px' : '460px',
+          padding: isRegister ? '44px 44px' : '44px 36px',
+          borderRadius: '28px',
+          transition: 'max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(250, 245, 255, 0.94) 100%)',
+          border: '1px solid rgba(221, 214, 254, 0.8)',
+          boxShadow: '0 20px 50px -10px rgba(144, 97, 249, 0.18)',
         }}
       >
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        {/* Header con Logo y Selector */}
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <img
             src="/logo.png"
             alt="Festy Logo"
             style={{
-              width: '95px',
-              height: '95px',
+              width: isRegister ? '85px' : '95px',
+              height: isRegister ? '85px' : '95px',
               objectFit: 'contain',
-              margin: '0 auto 8px',
+              margin: '0 auto 10px',
               display: 'block',
-              filter: 'drop-shadow(0 4px 12px rgba(144, 97, 249, 0.25))',
+              filter: 'drop-shadow(0 6px 16px rgba(144, 97, 249, 0.3))',
+              transition: 'all 0.3s ease',
             }}
           />
           <h1
             className="gradient-text"
-            style={{ fontSize: '2.2rem', fontWeight: 800, letterSpacing: '-1px' }}
+            style={{ fontSize: isRegister ? '2.1rem' : '2.2rem', fontWeight: 800, letterSpacing: '-0.8px', margin: '0 0 6px' }}
           >
             Festy
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '6px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.96rem', margin: 0 }}>
             {isRegister
-              ? 'Crea tu cuenta y nunca olvides un cumpleaños'
-              : 'Inicia sesión en tu calendario de cumpleaños'}
+              ? 'Únete a Festy: gestiona cumpleaños y comparte recuerdos inolvidables'
+              : 'Inicia sesión en tu calendario de cumpleaños familiar'}
           </p>
+
+          {/* Selector de pestañas suave estilo pastel */}
+          <div
+            style={{
+              display: 'inline-flex',
+              background: 'rgba(237, 233, 254, 0.6)',
+              padding: '4px',
+              borderRadius: '999px',
+              marginTop: '18px',
+              border: '1px solid rgba(221, 214, 254, 0.7)',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setIsRegister(false);
+                setError('');
+              }}
+              style={{
+                border: 'none',
+                background: !isRegister ? '#ffffff' : 'transparent',
+                color: !isRegister ? 'var(--accent-primary)' : 'var(--text-muted)',
+                fontWeight: 700,
+                fontSize: '0.88rem',
+                padding: '7px 22px',
+                borderRadius: '999px',
+                cursor: 'pointer',
+                boxShadow: !isRegister ? '0 2px 8px rgba(144, 97, 249, 0.15)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              Iniciar Sesión
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsRegister(true);
+                setError('');
+              }}
+              style={{
+                border: 'none',
+                background: isRegister ? '#ffffff' : 'transparent',
+                color: isRegister ? 'var(--accent-primary)' : 'var(--text-muted)',
+                fontWeight: 700,
+                fontSize: '0.88rem',
+                padding: '7px 22px',
+                borderRadius: '999px',
+                cursor: 'pointer',
+                boxShadow: isRegister ? '0 2px 8px rgba(144, 97, 249, 0.15)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              Crear Cuenta
+            </button>
+          </div>
         </div>
 
-        {/* Error */}
+        {/* Error Alert */}
         {error && (
           <div
             style={{
-              background: 'rgba(254, 226, 226, 0.85)',
-              border: '1px solid rgba(248, 113, 113, 0.5)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '12px 16px',
-              marginBottom: '20px',
+              background: 'rgba(254, 226, 226, 0.9)',
+              border: '1px solid rgba(248, 113, 113, 0.6)',
+              borderRadius: '14px',
+              padding: '12px 18px',
+              marginBottom: '22px',
               color: '#B91C1C',
               fontSize: '0.88rem',
               fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
             }}
           >
-            ⚠️ {error}
+            <span>⚠️</span>
+            <span>{error}</span>
           </div>
         )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {isRegister && (
-            <div>
-              <label
-                htmlFor="fullName"
-                style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}
-              >
-                Nombre completo
-              </label>
-              <input
-                id="fullName"
-                type="text"
-                placeholder="Ej: Diego Gurumendi"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  background: 'var(--bg-glass)',
-                  border: '1px solid var(--border-glass)',
-                  borderRadius: 'var(--radius-sm)',
-                  color: 'var(--text-main)',
-                  fontSize: '0.95rem',
-                  outline: 'none',
-                  transition: 'border-color 0.2s',
-                }}
-                onFocus={(e) => (e.target.style.borderColor = 'var(--accent-primary)')}
-                onBlur={(e) => (e.target.style.borderColor = 'var(--border-glass)')}
-              />
-            </div>
-          )}
-
-          <div>
-            <label
-              htmlFor="email"
-              style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}
-            >
-              Correo electrónico
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="tu@correo.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                background: 'var(--bg-glass)',
-                border: '1px solid var(--border-glass)',
-                borderRadius: 'var(--radius-sm)',
-                color: 'var(--text-main)',
-                fontSize: '0.95rem',
-                outline: 'none',
-                transition: 'border-color 0.2s',
-              }}
-              onFocus={(e) => (e.target.style.borderColor = 'var(--accent-primary)')}
-              onBlur={(e) => (e.target.style.borderColor = 'var(--border-glass)')}
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}
-            >
-              Contraseña
-            </label>
-            <input
-              id="password"
-              type="password"
-              placeholder="Mínimo 8 caracteres"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                background: 'var(--bg-glass)',
-                border: '1px solid var(--border-glass)',
-                borderRadius: 'var(--radius-sm)',
-                color: 'var(--text-main)',
-                fontSize: '0.95rem',
-                outline: 'none',
-                transition: 'border-color 0.2s',
-              }}
-              onFocus={(e) => (e.target.style.borderColor = 'var(--accent-primary)')}
-              onBlur={(e) => (e.target.style.borderColor = 'var(--border-glass)')}
-            />
-          </div>
-
-          {isRegister && (
-            <>
-              {/* Fecha de Cumpleaños */}
+        {/* Formulario */}
+        <form onSubmit={handleSubmit}>
+          {isRegister ? (
+            /* DISEÑO HORIZONTAL EN 2 COLUMNAS PARA REGISTRO */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
               <div
                 style={{
-                  background: 'rgba(255, 255, 255, 0.7)',
-                  border: '1px solid var(--border-glass)',
-                  borderRadius: 'var(--radius-sm)',
-                  padding: '16px',
-                  marginTop: '4px',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                  gap: '24px',
                 }}
               >
-                <label
-                  htmlFor="regBirthDate"
+                {/* Columna 1: Información Personal */}
+                <div
                   style={{
-                    display: 'block',
-                    fontSize: '0.88rem',
-                    fontWeight: 700,
-                    color: 'var(--text-main)',
-                    marginBottom: '8px',
+                    background: 'rgba(255, 255, 255, 0.65)',
+                    border: '1px solid rgba(221, 214, 254, 0.6)',
+                    borderRadius: '20px',
+                    padding: '22px 20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
                   }}
                 >
-                  🎂 Tu Fecha de Cumpleaños
-                </label>
-                <input
-                  id="regBirthDate"
-                  type="date"
-                  value={birthDate}
-                  onChange={(e) => {
-                    setBirthDate(e.target.value);
-                    if (e.target.value) {
-                      const [y, m, d] = e.target.value.split('-').map(Number);
-                      setBirthYear(String(y));
-                      setBirthMonth(m);
-                      setBirthDay(d);
-                    }
-                  }}
-                  required
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                    <span style={{ background: '#FCE7F3', color: '#EC4899', padding: '5px', borderRadius: '8px', display: 'flex' }}>
+                      <User size={16} />
+                    </span>
+                    <span style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                      Tus Datos de Acceso
+                    </span>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="fullName"
+                      style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}
+                    >
+                      Nombre completo
+                    </label>
+                    <input
+                      id="fullName"
+                      type="text"
+                      placeholder="Ej: Sofía Martínez"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px 14px',
+                        background: '#ffffff',
+                        border: '1px solid var(--border-glass)',
+                        borderRadius: '12px',
+                        color: 'var(--text-main)',
+                        fontSize: '0.95rem',
+                        outline: 'none',
+                        transition: 'border-color 0.2s, box-shadow 0.2s',
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = 'var(--accent-primary)';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(144, 97, 249, 0.15)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'var(--border-glass)';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="email"
+                      style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}
+                    >
+                      Correo electrónico
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      placeholder="tu@correo.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px 14px',
+                        background: '#ffffff',
+                        border: '1px solid var(--border-glass)',
+                        borderRadius: '12px',
+                        color: 'var(--text-main)',
+                        fontSize: '0.95rem',
+                        outline: 'none',
+                        transition: 'border-color 0.2s, box-shadow 0.2s',
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = 'var(--accent-primary)';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(144, 97, 249, 0.15)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'var(--border-glass)';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="password"
+                      style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}
+                    >
+                      Contraseña
+                    </label>
+                    <input
+                      id="password"
+                      type="password"
+                      placeholder="Mínimo 8 caracteres"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={8}
+                      style={{
+                        width: '100%',
+                        padding: '12px 14px',
+                        background: '#ffffff',
+                        border: '1px solid var(--border-glass)',
+                        borderRadius: '12px',
+                        color: 'var(--text-main)',
+                        fontSize: '0.95rem',
+                        outline: 'none',
+                        transition: 'border-color 0.2s, box-shadow 0.2s',
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = 'var(--accent-primary)';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(144, 97, 249, 0.15)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'var(--border-glass)';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Columna 2: Festejo y Círculo Familiar */}
+                <div
                   style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    background: '#ffffff',
-                    border: '1px solid var(--border-glass)',
-                    borderRadius: 'var(--radius-sm)',
-                    color: 'var(--text-main)',
-                    fontSize: '0.95rem',
-                    fontWeight: 600,
-                    outline: 'none',
-                    cursor: 'pointer',
+                    background: 'rgba(255, 255, 255, 0.65)',
+                    border: '1px solid rgba(221, 214, 254, 0.6)',
+                    borderRadius: '20px',
+                    padding: '22px 20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
                   }}
-                />
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '8px' }}>
-                  ✨ Se agregará automáticamente a tu calendario y se sincronizará con tu familia.
-                </p>
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                    <span style={{ background: '#EDE9FE', color: '#7E49F6', padding: '5px', borderRadius: '8px', display: 'flex' }}>
+                      <Calendar size={16} />
+                    </span>
+                    <span style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                      Tu Fecha de Cumpleaños & Familia
+                    </span>
+                  </div>
+
+                  {/* Fecha de Cumpleaños con Selector de Calendario */}
+                  <div
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(254, 243, 199, 0.4) 0%, rgba(252, 231, 243, 0.4) 100%)',
+                      border: '1px solid rgba(253, 230, 138, 0.7)',
+                      borderRadius: '14px',
+                      padding: '14px',
+                    }}
+                  >
+                    <label
+                      htmlFor="regBirthDate"
+                      style={{
+                        display: 'block',
+                        fontSize: '0.86rem',
+                        fontWeight: 700,
+                        color: 'var(--text-main)',
+                        marginBottom: '8px',
+                      }}
+                    >
+                      🎂 Selecciona tu Fecha de Nacimiento
+                    </label>
+                    <input
+                      id="regBirthDate"
+                      type="date"
+                      value={birthDate}
+                      onChange={(e) => {
+                        setBirthDate(e.target.value);
+                        if (e.target.value) {
+                          const [y, m, d] = e.target.value.split('-').map(Number);
+                          setBirthYear(String(y));
+                          setBirthMonth(m);
+                          setBirthDay(d);
+                        }
+                      }}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '11px 14px',
+                        background: '#ffffff',
+                        border: '1px solid rgba(221, 214, 254, 0.9)',
+                        borderRadius: '10px',
+                        color: 'var(--text-main)',
+                        fontSize: '0.95rem',
+                        fontWeight: 600,
+                        outline: 'none',
+                        cursor: 'pointer',
+                      }}
+                    />
+                    <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '8px', lineHeight: 1.4, margin: '8px 0 0' }}>
+                      ✨ Se agregará de forma inmediata a tu calendario y se sincronizará con tu círculo.
+                    </p>
+                  </div>
+
+                  {/* Código de Invitación Familiar */}
+                  <div>
+                    <label
+                      htmlFor="inviteCode"
+                      style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}
+                    >
+                      🔗 Código de invitación familiar (opcional)
+                    </label>
+                    <input
+                      id="inviteCode"
+                      type="text"
+                      placeholder="Ej: FESTY-8B92"
+                      value={inviteCode}
+                      onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                      style={{
+                        width: '100%',
+                        padding: '12px 14px',
+                        background: '#ffffff',
+                        border: '1px solid var(--border-glass)',
+                        borderRadius: '12px',
+                        color: 'var(--text-main)',
+                        fontSize: '0.95rem',
+                        fontFamily: 'monospace',
+                        fontWeight: 700,
+                        letterSpacing: '1px',
+                        outline: 'none',
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = 'var(--accent-primary)';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(144, 97, 249, 0.15)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'var(--border-glass)';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                    <p style={{ fontSize: '0.74rem', color: 'var(--text-dim)', marginTop: '5px', margin: '5px 0 0' }}>
+                      Si te invitaron a un círculo familiar, escribe aquí el código para unirte directo.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* Código de Invitación Opcional */}
+              {/* Botón de Enviar a lo ancho */}
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  justifyContent: 'center',
+                  padding: '15px',
+                  fontSize: '1.05rem',
+                  fontWeight: 700,
+                  borderRadius: '16px',
+                  boxShadow: '0 10px 25px rgba(126, 73, 246, 0.28)',
+                  opacity: loading ? 0.7 : 1,
+                  cursor: loading ? 'wait' : 'pointer',
+                }}
+              >
+                {loading ? '⏳ Creando tu cuenta...' : '✨ Completar Registro y Empezar'}
+              </button>
+            </div>
+          ) : (
+            /* DISEÑO VERTICAL COMPACTO PARA LOGIN */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <label
-                  htmlFor="inviteCode"
+                  htmlFor="email"
                   style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}
                 >
-                  🔗 Código de invitación familiar (opcional)
+                  Correo electrónico
                 </label>
                 <input
-                  id="inviteCode"
-                  type="text"
-                  placeholder="Ej: FESTY-9D36EEC6"
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                  id="email"
+                  type="email"
+                  placeholder="tu@correo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                   style={{
                     width: '100%',
                     padding: '12px 16px',
                     background: 'var(--bg-glass)',
                     border: '1px solid var(--border-glass)',
-                    borderRadius: 'var(--radius-sm)',
+                    borderRadius: '12px',
                     color: 'var(--text-main)',
                     fontSize: '0.95rem',
-                    fontFamily: 'monospace',
-                    fontWeight: 700,
                     outline: 'none',
+                    transition: 'border-color 0.2s',
                   }}
+                  onFocus={(e) => (e.target.style.borderColor = 'var(--accent-primary)')}
+                  onBlur={(e) => (e.target.style.borderColor = 'var(--border-glass)')}
                 />
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '4px' }}>
-                  Si tu familia te compartió un código, ingrésalo aquí para unirte directo a su círculo.
-                </p>
               </div>
-            </>
-          )}
 
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={loading}
-            style={{
-              width: '100%',
-              justifyContent: 'center',
-              padding: '14px',
-              fontSize: '1rem',
-              marginTop: '8px',
-              opacity: loading ? 0.7 : 1,
-            }}
-          >
-            {loading ? '⏳ Procesando...' : isRegister ? '✨ Crear Cuenta' : '🔑 Iniciar Sesión'}
-          </button>
+              <div>
+                <label
+                  htmlFor="password"
+                  style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}
+                >
+                  Contraseña
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  placeholder="Tu contraseña secreta"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'var(--bg-glass)',
+                    border: '1px solid var(--border-glass)',
+                    borderRadius: '12px',
+                    color: 'var(--text-main)',
+                    fontSize: '0.95rem',
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = 'var(--accent-primary)')}
+                  onBlur={(e) => (e.target.style.borderColor = 'var(--border-glass)')}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  justifyContent: 'center',
+                  padding: '14px',
+                  fontSize: '1rem',
+                  marginTop: '8px',
+                  borderRadius: '14px',
+                  boxShadow: '0 8px 20px rgba(126, 73, 246, 0.25)',
+                  opacity: loading ? 0.7 : 1,
+                  cursor: loading ? 'wait' : 'pointer',
+                }}
+              >
+                {loading ? '⏳ Iniciando sesión...' : '🔑 Iniciar Sesión'}
+              </button>
+            </div>
+          )}
         </form>
 
-        {/* Toggle Login / Register */}
-        <div style={{ textAlign: 'center', marginTop: '28px' }}>
-          <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>
-            {isRegister ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?'}
+        {/* Toggle Login / Register Footer */}
+        <div style={{ textAlign: 'center', marginTop: '24px' }}>
+          <p style={{ color: 'var(--text-dim)', fontSize: '0.92rem', margin: 0 }}>
+            {isRegister ? '¿Ya tienes una cuenta registrada?' : '¿Aún no tienes cuenta en Festy?'}
             <button
+              type="button"
               onClick={() => {
                 setIsRegister(!isRegister);
                 setError('');
@@ -354,17 +598,25 @@ export default function LoginPage() {
                 border: 'none',
                 color: 'var(--accent-primary)',
                 cursor: 'pointer',
-                fontWeight: 600,
+                fontWeight: 700,
                 marginLeft: '6px',
-                fontSize: '0.9rem',
+                fontSize: '0.92rem',
                 textDecoration: 'underline',
               }}
             >
-              {isRegister ? 'Iniciar sesión' : 'Regístrate gratis'}
+              {isRegister ? 'Iniciar sesión aquí' : 'Regístrate gratis'}
             </button>
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7E49F6' }}>Cargando Festy...</div>}>
+      <LoginFormContent />
+    </Suspense>
   );
 }

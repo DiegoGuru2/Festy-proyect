@@ -133,14 +133,14 @@ export default function Navbar() {
               <Info size={15} /> ¿Qué es Festy?
             </button>
             <button
-              onClick={() => router.push('/login')}
+              onClick={() => router.push('/login?tab=login')}
               className={pathname === '/login' ? 'btn-primary' : 'btn-secondary'}
               style={{ padding: '8px 18px', fontSize: '0.85rem' }}
             >
               <LogIn size={15} /> Iniciar Sesión
             </button>
             <button
-              onClick={() => router.push('/login')}
+              onClick={() => router.push('/login?tab=register')}
               className="btn-primary"
               style={{ padding: '8px 18px', fontSize: '0.85rem' }}
             >

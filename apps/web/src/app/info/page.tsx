@@ -172,14 +172,14 @@ export default function InfoPage() {
             ) : (
               <>
                 <button
-                  onClick={() => router.push('/login')}
+                  onClick={() => router.push('/login?tab=register')}
                   className="btn-primary animate-btn-bounce"
                   style={{ padding: '16px 36px', fontSize: '1.08rem' }}
                 >
                   <Sparkles size={20} /> Empezar Gratis <ArrowRight size={18} />
                 </button>
                 <button
-                  onClick={() => router.push('/login')}
+                  onClick={() => router.push('/login?tab=login')}
                   className="btn-secondary"
                   style={{ padding: '16px 30px', fontSize: '1.08rem' }}
                 >

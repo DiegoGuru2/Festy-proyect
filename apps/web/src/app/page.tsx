@@ -36,6 +36,7 @@ interface BirthdayItem {
   circleName: string;
   circleId: string;
   isClaimed: boolean;
+  linkedUserId?: string | null;
   contactEmail?: string;
   notes?: string;
 }
@@ -400,9 +401,32 @@ export default function HomePage() {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
+  const deduplicateBirthdays = (list: BirthdayItem[]): BirthdayItem[] => {
+    const seen = new Map<string, BirthdayItem>();
+    for (const b of list) {
+      const key = b.linkedUserId
+        ? `uid:${b.linkedUserId}`
+        : b.contactEmail
+        ? `email:${b.contactEmail.toLowerCase().trim()}_${b.birthDay}_${b.birthMonth}`
+        : `name:${b.fullName.toLowerCase().trim()}_${b.birthDay}_${b.birthMonth}`;
+
+      if (!seen.has(key)) {
+        seen.set(key, { ...b });
+      } else {
+        const existing = seen.get(key)!;
+        if (b.circleName && !existing.circleName.includes(b.circleName)) {
+          existing.circleName = `${existing.circleName} • ${b.circleName}`;
+        }
+      }
+    }
+    return Array.from(seen.values());
+  };
+
   const filteredBirthdays = selectedCircle === 'Todos'
-    ? birthdays
+    ? deduplicateBirthdays(birthdays)
     : birthdays.filter((b) => b.circleName === selectedCircle);
+
+  const uniquePeopleBirthdays = deduplicateBirthdays(birthdays);
 
   // Fallback demo photos if feed is empty
   const displayPhotos = photosFeed.length > 0
@@ -1532,7 +1556,7 @@ export default function HomePage() {
                   style={{ padding: '8px 14px', fontSize: '0.82rem', borderRadius: '12px', cursor: 'pointer', background: '#fff' }}
                 >
                   <option value="" disabled>Selecciona cumpleañero...</option>
-                  {birthdays.map((b) => (
+                  {uniquePeopleBirthdays.map((b) => (
                     <option key={b.id} value={b.id}>
                       🎂 {b.fullName}
                     </option>
@@ -1555,7 +1579,7 @@ export default function HomePage() {
           >
             Todos ({displayPhotos.length})
           </button>
-          {birthdays.map((b) => (
+          {uniquePeopleBirthdays.map((b) => (
             <button
               key={b.id}
               onClick={() => setMuroFilter(b.fullName)}

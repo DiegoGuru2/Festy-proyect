@@ -138,7 +138,7 @@ export default function HomePage() {
   useEffect(() => {
     const token = getToken();
     if (!token) {
-      router.push('/login');
+      router.push('/info');
       return;
     }
     setUserState(getUser());

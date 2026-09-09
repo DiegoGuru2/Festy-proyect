@@ -10,7 +10,7 @@
   "scripts": {
     "dev:api": "npm --workspace=@festy/api run dev",
     "dev:web": "npm --workspace=@festy/web run dev",
-    "build:api": "npm --workspace=@festy/shared run build && npm --workspace=@festy/db run build && npm --workspace=@festy/api run build && mkdir -p public",
+    "build:api": "npm --workspace=@festy/shared run build && npm --workspace=@festy/db run build && npm --workspace=@festy/api run build",
     "build:web": "npm --workspace=@festy/shared run build && npm --workspace=@festy/web run build",
     "build": "npm --workspace=@festy/shared run build && npm --workspace=@festy/db run build && npm --workspace=@festy/api run build && npm --workspace=@festy/web run build",
     "db:generate": "npm --workspace=@festy/db run generate",

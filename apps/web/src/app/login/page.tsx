@@ -371,7 +371,7 @@ function LoginFormContent() {
                         minLength={8}
                         style={{
                           width: '100%',
-                          padding: '12px 46px 12px 14px',
+                          padding: '12px 44px 12px 14px',
                           background: '#ffffff',
                           border: '1px solid var(--border-glass)',
                           borderRadius: '12px',
@@ -398,18 +398,16 @@ function LoginFormContent() {
                           background: 'none',
                           border: 'none',
                           cursor: 'pointer',
-                          color: showPassword ? 'var(--accent-primary)' : 'var(--text-muted)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          padding: '4px',
+                          padding: '6px',
                           borderRadius: '8px',
-                          transition: 'color 0.15s',
+                          transition: 'opacity 0.2s',
                         }}
                         title={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
-                        aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
                       >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showPassword ? <EyeOff size={18} color="#7E49F6" /> : <Eye size={18} color="#94A3B8" />}
                       </button>
                     </div>
                   </div>
@@ -602,7 +600,7 @@ function LoginFormContent() {
                     required
                     style={{
                       width: '100%',
-                      padding: '12px 46px 12px 16px',
+                      padding: '12px 44px 12px 16px',
                       background: 'var(--bg-glass)',
                       border: '1px solid var(--border-glass)',
                       borderRadius: '12px',
@@ -623,18 +621,16 @@ function LoginFormContent() {
                       background: 'none',
                       border: 'none',
                       cursor: 'pointer',
-                      color: showPassword ? 'var(--accent-primary)' : 'var(--text-muted)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      padding: '4px',
+                      padding: '6px',
                       borderRadius: '8px',
-                      transition: 'color 0.15s',
+                      transition: 'opacity 0.2s',
                     }}
                     title={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
-                    aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showPassword ? <EyeOff size={18} color="#7E49F6" /> : <Eye size={18} color="#94A3B8" />}
                   </button>
                 </div>
               </div>

@@ -28,6 +28,7 @@
   "author": "Festy Team",
   "license": "UNLICENSED",
   "dependencies": {
-    "nodemailer": "^10.0.1"
+    "nodemailer": "^10.0.1",
+    "typescript": "^5.5.4"
   }
 }

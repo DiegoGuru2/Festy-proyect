@@ -56,7 +56,7 @@ export default function ProfilePage() {
   useEffect(() => {
     const token = getToken();
     if (!token) {
-      router.push('/login');
+      router.replace('/info');
       return;
     }
     loadUserData(token);
@@ -200,7 +200,7 @@ export default function ProfilePage() {
 
   const handleLogout = () => {
     removeToken();
-    router.push('/login');
+    router.replace('/info');
   };
 
   if (loading) {
@@ -384,8 +384,8 @@ export default function ProfilePage() {
         </section>
 
         {/* SECTION 2: CHANGE PASSWORD */}
-        <section className="glass-panel" style={{ padding: '28px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+        <section id="seguridad" className="glass-panel" style={{ padding: '28px', scrollMarginTop: '90px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
             <div style={{ background: 'rgba(251, 207, 232, 0.7)', padding: '10px', borderRadius: '12px' }}>
               <KeyRound size={20} color="#BE185D" />
             </div>
@@ -395,6 +395,12 @@ export default function ProfilePage() {
                 Actualiza tu contraseña para mantener tu cuenta protegida
               </p>
             </div>
+          </div>
+
+          {/* Pastel Security Badge */}
+          <div style={{ background: 'rgba(237, 233, 254, 0.45)', border: '1px solid rgba(221, 214, 254, 0.75)', borderRadius: '12px', padding: '10px 14px', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.83rem', color: '#5B21B6' }}>
+            <ShieldCheck size={18} color="#7E49F6" />
+            <span>Tu cuenta está resguardada con cifrado bcrypt en TiDB y sesiones protegidas con JWT.</span>
           </div>
 
           {passMsg.text && (

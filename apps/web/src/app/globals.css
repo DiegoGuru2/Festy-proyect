@@ -436,4 +436,27 @@ main {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 12px;
   }
+  .nav-email-text {
+    display: none !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .nav-text-hide {
+    display: none !important;
+  }
+  .nav-badge {
+    display: none !important;
+  }
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

@@ -65,7 +65,7 @@ export default function CirclesPage() {
     const token = getToken();
     const userData = getUser();
     if (!token) {
-      router.push('/login');
+      router.replace('/info');
       return;
     }
     setUser(userData);
@@ -180,7 +180,7 @@ export default function CirclesPage() {
 
   const handleLogout = () => {
     removeToken();
-    router.push('/login');
+    router.replace('/info');
   };
 
   if (loading) {

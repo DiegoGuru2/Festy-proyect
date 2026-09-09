@@ -138,7 +138,7 @@ export default function HomePage() {
   useEffect(() => {
     const token = getToken();
     if (!token) {
-      router.push('/info');
+      router.replace('/info');
       return;
     }
     setUserState(getUser());
@@ -175,7 +175,7 @@ export default function HomePage() {
 
   const handleLogout = () => {
     removeToken();
-    router.push('/login');
+    router.replace('/info');
   };
 
   // Open Celebration Modal when clicking a birthday

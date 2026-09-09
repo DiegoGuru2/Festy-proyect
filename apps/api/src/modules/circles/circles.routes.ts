@@ -1,12 +1,13 @@
 import { FastifyPluginAsync } from 'fastify';
 import crypto from 'crypto';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import {
   getDbConnection,
   circles,
   circleMembers,
   circleInvitations,
   users,
+  birthdays,
 } from '@festy/db';
 import {
   CreateCircleSchema,
@@ -18,7 +19,7 @@ export const circleRoutes: FastifyPluginAsync = async (fastify) => {
   const db = getDbConnection();
 
   // ---------------------------------------------------------------------------
-  // LISTAR MIS CÍRCULOS
+  // LISTAR MIS CÍRCULOS (CON LISTA DE INTEGRANTES)
   // ---------------------------------------------------------------------------
   fastify.get('/', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     const userId = request.user.id;
@@ -35,11 +36,74 @@ export const circleRoutes: FastifyPluginAsync = async (fastify) => {
       .innerJoin(circles, eq(circles.id, circleMembers.circleId))
       .where(and(eq(circleMembers.userId, userId), sql`${circles.deletedAt} IS NULL`));
 
-    return reply.send({ circles: userCircles });
+    if (userCircles.length === 0) {
+      return reply.send({ circles: [] });
+    }
+
+    const circleIds = userCircles.map((c) => c.id);
+
+    // Obtener todos los integrantes de estos círculos
+    const allMembers = await db
+      .select({
+        id: circleMembers.id,
+        circleId: circleMembers.circleId,
+        userId: circleMembers.userId,
+        role: circleMembers.role,
+        joinedAt: circleMembers.joinedAt,
+        fullName: users.fullName,
+        email: users.email,
+        avatarUrl: users.avatarUrl,
+      })
+      .from(circleMembers)
+      .innerJoin(users, eq(users.id, circleMembers.userId))
+      .where(inArray(circleMembers.circleId, circleIds));
+
+    // Obtener cumpleaños de estos círculos para vincular la fecha de cumpleaños al integrante
+    const allBirthdays = await db
+      .select({
+        circleId: birthdays.circleId,
+        linkedUserId: birthdays.linkedUserId,
+        contactEmail: birthdays.contactEmail,
+        birthDay: birthdays.birthDay,
+        birthMonth: birthdays.birthMonth,
+        birthYear: birthdays.birthYear,
+      })
+      .from(birthdays)
+      .where(and(inArray(birthdays.circleId, circleIds), sql`${birthdays.deletedAt} IS NULL`));
+
+    const membersByCircle: Record<string, any[]> = {};
+    for (const m of allMembers) {
+      if (!membersByCircle[m.circleId]) membersByCircle[m.circleId] = [];
+      const bday = allBirthdays.find(
+        (b) =>
+          b.circleId === m.circleId &&
+          (b.linkedUserId === m.userId || (b.contactEmail && b.contactEmail.toLowerCase() === m.email.toLowerCase()))
+      );
+      membersByCircle[m.circleId].push({
+        id: m.id,
+        userId: m.userId,
+        fullName: m.fullName,
+        email: m.email,
+        role: m.role,
+        avatarUrl: m.avatarUrl,
+        joinedAt: m.joinedAt,
+        birthDay: bday ? bday.birthDay : null,
+        birthMonth: bday ? bday.birthMonth : null,
+        birthYear: bday ? bday.birthYear : null,
+      });
+    }
+
+    const enriched = userCircles.map((c) => ({
+      ...c,
+      members: membersByCircle[c.id] || [],
+      memberCount: (membersByCircle[c.id] || []).length,
+    }));
+
+    return reply.send({ circles: enriched });
   });
 
   // ---------------------------------------------------------------------------
-  // CREAR CÍRCULO
+  // CREAR CÍRCULO (CON AUTO-REGISTRO DEL CUMPLEAÑOS DEL DUEÑO)
   // ---------------------------------------------------------------------------
   fastify.post('/', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     const parseResult = CreateCircleSchema.safeParse(request.body);
@@ -50,6 +114,15 @@ export const circleRoutes: FastifyPluginAsync = async (fastify) => {
     const userId = request.user.id;
     const circleId = crypto.randomUUID();
     const { name } = parseResult.data;
+
+    // Buscar datos y cumpleaños previo del creador para replicarlo en el nuevo círculo
+    const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    const creatorBirthday = await db.query.birthdays.findFirst({
+      where: and(
+        sql`(${birthdays.linkedUserId} = ${userId} OR ${birthdays.createdBy} = ${userId} OR ${birthdays.contactEmail} = ${user?.email})`,
+        sql`${birthdays.deletedAt} IS NULL`
+      ),
+    });
 
     await db.transaction(async (tx) => {
       // 1. Crear Círculo
@@ -66,6 +139,23 @@ export const circleRoutes: FastifyPluginAsync = async (fastify) => {
         userId,
         role: 'owner',
       });
+
+      // 3. Registrar automáticamente el cumpleaños del dueño en este nuevo círculo
+      if (creatorBirthday && user) {
+        await tx.insert(birthdays).values({
+          id: crypto.randomUUID(),
+          circleId,
+          createdBy: userId,
+          linkedUserId: userId,
+          isClaimed: true,
+          fullName: user.fullName || creatorBirthday.fullName,
+          contactEmail: user.email,
+          birthDay: creatorBirthday.birthDay,
+          birthMonth: creatorBirthday.birthMonth,
+          birthYear: creatorBirthday.birthYear,
+          isMinor: creatorBirthday.isMinor,
+        });
+      }
     });
 
     return reply.status(201).send({
@@ -187,6 +277,15 @@ export const circleRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.status(409).send({ error: 'Conflict', message: 'Ya eres miembro de este círculo' });
     }
 
+    // Buscar información del usuario y su fecha de cumpleaños
+    const joiningUser = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    const userBirthday = await db.query.birthdays.findFirst({
+      where: and(
+        sql`(${birthdays.linkedUserId} = ${userId} OR ${birthdays.createdBy} = ${userId} OR ${birthdays.contactEmail} = ${joiningUser?.email})`,
+        sql`${birthdays.deletedAt} IS NULL`
+      ),
+    });
+
     // Ejecutar alta de membresía y actualización de cupos atómicamente
     await db.transaction(async (tx) => {
       await tx.insert(circleMembers).values({
@@ -207,6 +306,31 @@ export const circleRoutes: FastifyPluginAsync = async (fastify) => {
           updatedAt: new Date(),
         })
         .where(eq(circleInvitations.id, invitation.id));
+
+      // Replicar automáticamente el cumpleaños del usuario que se une al círculo
+      const existingInCircle = await tx.query.birthdays.findFirst({
+        where: and(
+          eq(birthdays.circleId, invitation.circleId),
+          sql`(${birthdays.linkedUserId} = ${userId} OR ${birthdays.contactEmail} = ${joiningUser?.email})`,
+          sql`${birthdays.deletedAt} IS NULL`
+        ),
+      });
+
+      if (!existingInCircle && userBirthday && joiningUser) {
+        await tx.insert(birthdays).values({
+          id: crypto.randomUUID(),
+          circleId: invitation.circleId,
+          createdBy: userId,
+          linkedUserId: userId,
+          isClaimed: true,
+          fullName: joiningUser.fullName || userBirthday.fullName,
+          contactEmail: joiningUser.email,
+          birthDay: userBirthday.birthDay,
+          birthMonth: userBirthday.birthMonth,
+          birthYear: userBirthday.birthYear,
+          isMinor: userBirthday.isMinor,
+        });
+      }
     });
 
     return reply.send({
@@ -214,5 +338,63 @@ export const circleRoutes: FastifyPluginAsync = async (fastify) => {
       circleId: invitation.circleId,
       role: invitation.role,
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // LISTAR INTEGRANTES DE UN CÍRCULO ESPECÍFICO
+  // ---------------------------------------------------------------------------
+  fastify.get('/:id/members', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const { id: circleId } = request.params as { id: string };
+    const userId = request.user.id;
+
+    // Verificar membresía
+    const membership = await db.query.circleMembers.findFirst({
+      where: and(eq(circleMembers.circleId, circleId), eq(circleMembers.userId, userId)),
+    });
+
+    if (!membership) {
+      return reply.status(403).send({ error: 'Forbidden', message: 'No perteneces a este círculo' });
+    }
+
+    const membersList = await db
+      .select({
+        id: circleMembers.id,
+        userId: circleMembers.userId,
+        role: circleMembers.role,
+        joinedAt: circleMembers.joinedAt,
+        fullName: users.fullName,
+        email: users.email,
+        avatarUrl: users.avatarUrl,
+      })
+      .from(circleMembers)
+      .innerJoin(users, eq(users.id, circleMembers.userId))
+      .where(eq(circleMembers.circleId, circleId));
+
+    const circleBdays = await db
+      .select({
+        linkedUserId: birthdays.linkedUserId,
+        contactEmail: birthdays.contactEmail,
+        birthDay: birthdays.birthDay,
+        birthMonth: birthdays.birthMonth,
+        birthYear: birthdays.birthYear,
+      })
+      .from(birthdays)
+      .where(and(eq(birthdays.circleId, circleId), sql`${birthdays.deletedAt} IS NULL`));
+
+    const enriched = membersList.map((m) => {
+      const bday = circleBdays.find(
+        (b) =>
+          b.linkedUserId === m.userId ||
+          (b.contactEmail && b.contactEmail.toLowerCase() === m.email.toLowerCase())
+      );
+      return {
+        ...m,
+        birthDay: bday ? bday.birthDay : null,
+        birthMonth: bday ? bday.birthMonth : null,
+        birthYear: bday ? bday.birthYear : null,
+      };
+    });
+
+    return reply.send({ members: enriched });
   });
 };

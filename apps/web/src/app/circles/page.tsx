@@ -20,12 +20,27 @@ import {
   Settings,
 } from 'lucide-react';
 
+interface Member {
+  id: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  role: string;
+  avatarUrl?: string | null;
+  joinedAt: string;
+  birthDay?: number | null;
+  birthMonth?: number | null;
+  birthYear?: number | null;
+}
+
 interface Circle {
   id: string;
   name: string;
   role: string;
   joinedAt: string;
   createdAt: string;
+  members?: Member[];
+  memberCount?: number;
 }
 
 interface Invitation {
@@ -36,6 +51,11 @@ interface Invitation {
   maxUses: number;
   expiresAt: string;
 }
+
+const MONTH_NAMES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+];
 
 export default function CirclesPage() {
   const router = useRouter();
@@ -392,45 +412,231 @@ export default function CirclesPage() {
           </p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {circles.map((circle) => (
-            <div key={circle.id} className="glass-panel" style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{
-                  width: '50px', height: '50px', borderRadius: '14px',
-                  background: 'var(--accent-gradient)', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem',
-                }}>
-                  {circle.name === 'Familia' ? '👨‍👩‍👧‍👦' : circle.name === 'Amigos' ? '🤝' : circle.name === 'Oficina' || circle.name === 'Trabajo' ? '💼' : '👥'}
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>{circle.name}</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                    {getRoleIcon(circle.role)}
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
-                      {getRoleLabel(circle.role)}
-                    </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {circles.map((circle) => {
+            const members = circle.members || [];
+            return (
+              <div
+                key={circle.id}
+                className="glass-panel"
+                style={{
+                  padding: '24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '18px',
+                  borderRadius: '20px',
+                }}
+              >
+                {/* Header Row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div
+                      style={{
+                        width: '50px',
+                        height: '50px',
+                        borderRadius: '16px',
+                        background: 'var(--accent-gradient)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.45rem',
+                        boxShadow: '0 4px 14px rgba(144, 97, 249, 0.2)',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {circle.name === 'Familia' || circle.name.toLowerCase().includes('fam')
+                        ? '👨‍👩‍👧‍👦'
+                        : circle.name === 'Amigos' || circle.name.toLowerCase().includes('amig')
+                        ? '🤝'
+                        : circle.name.toLowerCase().includes('ofi') || circle.name.toLowerCase().includes('itb') || circle.name.toLowerCase().includes('trab')
+                        ? '💼'
+                        : '👥'}
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>{circle.name}</h3>
+                        <span className="badge badge-purple" style={{ fontSize: '0.74rem', padding: '2px 9px' }}>
+                          👥 {circle.memberCount || members.length} {(circle.memberCount || members.length) === 1 ? 'integrante' : 'integrantes'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                        {getRoleIcon(circle.role)}
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 600 }}>
+                          Tu rol: {getRoleLabel(circle.role)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {(circle.role === 'owner' || circle.role === 'admin') && (
+                      <button
+                        onClick={() => handleGenerateInvite(circle.id)}
+                        className="btn-secondary"
+                        disabled={generatingInvite === circle.id}
+                        style={{ padding: '8px 14px', fontSize: '0.82rem' }}
+                      >
+                        {generatingInvite === circle.id ? '⏳...' : <><UserPlus size={14} /> Invitar</>}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => router.push(`/?circle=${circle.id}`)}
+                      className="btn-primary"
+                      style={{ padding: '8px 16px', fontSize: '0.82rem' }}
+                    >
+                      📅 Ver Calendario
+                    </button>
                   </div>
                 </div>
-              </div>
 
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {(circle.role === 'owner' || circle.role === 'admin') && (
-                  <button
-                    onClick={() => handleGenerateInvite(circle.id)}
-                    className="btn-secondary"
-                    disabled={generatingInvite === circle.id}
-                    style={{ padding: '8px 14px', fontSize: '0.8rem' }}
-                  >
-                    {generatingInvite === circle.id ? '⏳...' : <><UserPlus size={14} /> Invitar</>}
-                  </button>
-                )}
-                <button onClick={() => router.push(`/?circle=${circle.id}`)} className="btn-primary" style={{ padding: '8px 14px', fontSize: '0.8rem' }}>
-                  📅 Ver Calendario
-                </button>
+                {/* Assigned Members Section */}
+                <div
+                  style={{
+                    borderTop: '1px solid rgba(221, 214, 254, 0.65)',
+                    paddingTop: '16px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <span
+                      style={{
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        color: 'var(--text-muted)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <Users size={14} color="#7E49F6" />
+                      Integrantes Asignados ({members.length})
+                    </span>
+                  </div>
+
+                  {members.length === 0 ? (
+                    <div style={{ padding: '12px 14px', background: 'rgba(255, 255, 255, 0.6)', borderRadius: '12px', fontSize: '0.82rem', color: 'var(--text-dim)' }}>
+                      No hay otros integrantes registrados en este círculo aún. ¡Usa el botón "Invitar" para sumar a más personas!
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))',
+                        gap: '10px',
+                      }}
+                    >
+                      {members.map((m) => {
+                        const isSelf = user?.email && m.email.toLowerCase() === user.email.toLowerCase();
+                        const initial = m.fullName ? m.fullName.charAt(0).toUpperCase() : m.email.charAt(0).toUpperCase();
+
+                        return (
+                          <div
+                            key={m.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                              padding: '10px 14px',
+                              borderRadius: '14px',
+                              background: isSelf ? 'rgba(237, 233, 254, 0.65)' : 'rgba(255, 255, 255, 0.75)',
+                              border: isSelf ? '1.5px solid rgba(167, 139, 250, 0.65)' : '1px solid rgba(221, 214, 254, 0.55)',
+                              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.02)',
+                            }}
+                          >
+                            {/* Avatar */}
+                            <div
+                              style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '50%',
+                                background:
+                                  m.role === 'owner'
+                                    ? 'linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%)'
+                                    : m.role === 'admin'
+                                    ? 'linear-gradient(135deg, #DDD6FE 0%, #7E49F6 100%)'
+                                    : 'linear-gradient(135deg, #BAE6FD 0%, #818CF8 100%)',
+                                color: m.role === 'owner' ? '#78350F' : '#ffffff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 800,
+                                fontSize: '0.9rem',
+                                flexShrink: 0,
+                                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
+                              }}
+                            >
+                              {initial}
+                            </div>
+
+                            {/* Details */}
+                            <div style={{ overflow: 'hidden', flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <span
+                                  style={{
+                                    fontSize: '0.88rem',
+                                    fontWeight: 700,
+                                    color: 'var(--text-main)',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                  }}
+                                  title={m.fullName}
+                                >
+                                  {m.fullName}
+                                </span>
+                                {isSelf && (
+                                  <span
+                                    style={{
+                                      fontSize: '0.68rem',
+                                      color: '#7E49F6',
+                                      fontWeight: 800,
+                                      background: 'rgba(126, 73, 246, 0.1)',
+                                      padding: '1px 5px',
+                                      borderRadius: '6px',
+                                    }}
+                                  >
+                                    Tú
+                                  </span>
+                                )}
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px', flexWrap: 'wrap' }}>
+                                <span
+                                  style={{
+                                    fontSize: '0.72rem',
+                                    color: m.role === 'owner' ? '#B45309' : m.role === 'admin' ? '#6D28D9' : 'var(--text-dim)',
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {m.role === 'owner' ? '👑 Dueño' : m.role === 'admin' ? '🛡️ Admin' : '👤 Miembro'}
+                                </span>
+
+                                {m.birthDay && m.birthMonth && (
+                                  <span
+                                    style={{
+                                      fontSize: '0.72rem',
+                                      color: '#BE185D',
+                                      fontWeight: 700,
+                                      background: 'rgba(251, 207, 232, 0.5)',
+                                      padding: '1px 6px',
+                                      borderRadius: '6px',
+                                    }}
+                                  >
+                                    🎂 {m.birthDay} {MONTH_NAMES[m.birthMonth - 1]?.slice(0, 3)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

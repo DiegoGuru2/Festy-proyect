@@ -37,6 +37,44 @@ export const birthdayRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.send({ birthdays: [] });
     }
 
+    // Auto-recuperación: asegurar que el cumpleaños del usuario esté registrado en cada círculo al que pertenece
+    const userRecord = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    const userBirthday = await db.query.birthdays.findFirst({
+      where: and(
+        sql`(${birthdays.linkedUserId} = ${userId} OR ${birthdays.createdBy} = ${userId} OR ${birthdays.contactEmail} = ${userRecord?.email})`,
+        sql`${birthdays.deletedAt} IS NULL`
+      ),
+    });
+
+    if (userBirthday && userRecord) {
+      for (const circle of userCircles) {
+        const hasBirthdayInCircle = await db.query.birthdays.findFirst({
+          where: and(
+            eq(birthdays.circleId, circle.circleId),
+            sql`(${birthdays.linkedUserId} = ${userId} OR ${birthdays.contactEmail} = ${userRecord.email})`,
+            sql`${birthdays.deletedAt} IS NULL`
+          ),
+        });
+
+        if (!hasBirthdayInCircle) {
+          await db.insert(birthdays).values({
+            id: crypto.randomUUID(),
+            circleId: circle.circleId,
+            createdBy: userId,
+            linkedUserId: userId,
+            isClaimed: true,
+            fullName: userRecord.fullName || userBirthday.fullName,
+            contactEmail: userRecord.email,
+            birthDay: userBirthday.birthDay,
+            birthMonth: userBirthday.birthMonth,
+            birthYear: userBirthday.birthYear,
+            isMinor: userBirthday.isMinor,
+            notes: 'Cumpleaños sincronizado de integrante',
+          });
+        }
+      }
+    }
+
     const circleIds = userCircles.map((c) => c.circleId);
     const circleMap = new Map(userCircles.map((c) => [c.circleId, c.circleName]));
 

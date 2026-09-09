@@ -27,12 +27,19 @@ function LoginFormContent() {
       : 'America/Guayaquil'
   );
 
+  const [expiredNotice, setExpiredNotice] = useState<boolean>(false);
+
   // Sync tab with URL query parameter
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab === 'register' || searchParams.get('register') === 'true') {
       setIsRegister(true);
     } else if (tab === 'login') {
+      setIsRegister(false);
+    }
+
+    if (searchParams.get('expired') === '1' || searchParams.get('expired') === 'true') {
+      setExpiredNotice(true);
       setIsRegister(false);
     }
   }, [searchParams]);
@@ -195,6 +202,28 @@ function LoginFormContent() {
             </button>
           </div>
         </div>
+
+        {/* Session Expired Notice */}
+        {expiredNotice && (
+          <div
+            style={{
+              background: 'rgba(254, 243, 199, 0.95)',
+              border: '1px solid rgba(245, 158, 11, 0.6)',
+              borderRadius: '14px',
+              padding: '12px 18px',
+              marginBottom: '20px',
+              color: '#92400E',
+              fontSize: '0.88rem',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+            }}
+          >
+            <span style={{ fontSize: '1.2rem' }}>🔒</span>
+            <span>Tu sesión ha caducado por seguridad. Por favor, ingresa tus datos de acceso nuevamente.</span>
+          </div>
+        )}
 
         {/* Error Alert */}
         {error && (

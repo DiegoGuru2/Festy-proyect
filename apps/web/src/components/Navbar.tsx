@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { getToken, getUser, removeToken } from '@/lib/api';
+import { getToken, getUser, removeToken, scheduleTokenExpiration } from '@/lib/api';
 import {
   Calendar as CalendarIcon,
   Users,
@@ -27,10 +27,30 @@ export default function Navbar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const token = getToken();
-    const currentUser = getUser();
-    setIsAuth(Boolean(token));
-    setUser(currentUser);
+    const checkAuth = () => {
+      const token = getToken();
+      const currentUser = getUser();
+      setIsAuth(Boolean(token));
+      setUser(currentUser);
+      if (token) {
+        scheduleTokenExpiration(token);
+      }
+    };
+
+    checkAuth();
+
+    const handleSessionExpired = () => {
+      setIsAuth(false);
+      setUser(null);
+      setDropdownOpen(false);
+    };
+
+    window.addEventListener('storage', checkAuth);
+    window.addEventListener('festy_session_expired', handleSessionExpired);
+    return () => {
+      window.removeEventListener('storage', checkAuth);
+      window.removeEventListener('festy_session_expired', handleSessionExpired);
+    };
   }, [pathname]);
 
   // Close dropdown on click outside or escape

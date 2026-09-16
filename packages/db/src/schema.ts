@@ -313,3 +313,27 @@ export const reminderDispatchLogs = mysqlTable(
     ),
   })
 );
+
+// -----------------------------------------------------------------------------
+// 15. DIRECT_MESSAGES
+// -----------------------------------------------------------------------------
+export const directMessages = mysqlTable(
+  'direct_messages',
+  {
+    id: varchar('id', { length: 36 }).primaryKey(),
+    senderId: varchar('sender_id', { length: 36 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+    receiverId: varchar('receiver_id', { length: 36 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+    circleId: varchar('circle_id', { length: 36 }).references(() => circles.id, { onDelete: 'set null' }),
+    content: text('content').notNull(),
+    isRead: boolean('is_read').notNull().default(false),
+    readAt: datetime('read_at', { mode: 'date' }),
+    createdAt: datetime('created_at', { mode: 'date' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: datetime('updated_at', { mode: 'date' }).notNull().default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`),
+    deletedAt: datetime('deleted_at', { mode: 'date' }),
+  },
+  (table) => ({
+    conversationIdx: index('idx_dm_conversation').on(table.senderId, table.receiverId, table.createdAt),
+    receiverUnreadIdx: index('idx_dm_receiver_unread').on(table.receiverId, table.isRead, table.deletedAt),
+    circleCtxIdx: index('idx_dm_circle').on(table.circleId),
+  })
+);

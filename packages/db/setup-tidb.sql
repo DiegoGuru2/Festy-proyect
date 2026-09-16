@@ -250,3 +250,24 @@ CREATE TABLE IF NOT EXISTS reminder_dispatch_logs (
   CONSTRAINT fk_reminder_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_reminder_birthday FOREIGN KEY (birthday_id) REFERENCES birthdays(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 15. DIRECT_MESSAGES
+CREATE TABLE IF NOT EXISTS direct_messages (
+  id VARCHAR(36) NOT NULL,
+  sender_id VARCHAR(36) NOT NULL,
+  receiver_id VARCHAR(36) NOT NULL,
+  circle_id VARCHAR(36) NULL,
+  content TEXT NOT NULL,
+  is_read BOOLEAN NOT NULL DEFAULT FALSE,
+  read_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at DATETIME NULL,
+  PRIMARY KEY (id),
+  INDEX idx_dm_conversation (sender_id, receiver_id, created_at),
+  INDEX idx_dm_receiver_unread (receiver_id, is_read, deleted_at),
+  INDEX idx_dm_circle (circle_id),
+  CONSTRAINT fk_dm_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_dm_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_dm_circle FOREIGN KEY (circle_id) REFERENCES circles(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

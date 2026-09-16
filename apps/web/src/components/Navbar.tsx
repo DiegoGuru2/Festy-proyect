@@ -16,6 +16,7 @@ import {
   User as UserIcon,
   KeyRound,
   Sparkles,
+  MessageCircle,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -24,6 +25,7 @@ export default function Navbar() {
   const [isAuth, setIsAuth] = useState<boolean>(false);
   const [user, setUser] = useState<any>(null);
   const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
+  const [unreadMsgCount, setUnreadMsgCount] = useState<number>(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,6 +41,24 @@ export default function Navbar() {
 
     checkAuth();
 
+    // Poll unread message count
+    const fetchUnread = async () => {
+      const t = getToken();
+      if (!t) return;
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/messages/unread-count`,
+          { headers: { Authorization: `Bearer ${t}` } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadMsgCount(data.unreadCount || 0);
+        }
+      } catch {}
+    };
+    fetchUnread();
+    const unreadTimer = setInterval(fetchUnread, 30000);
+
     const handleSessionExpired = () => {
       setIsAuth(false);
       setUser(null);
@@ -50,6 +70,7 @@ export default function Navbar() {
     return () => {
       window.removeEventListener('storage', checkAuth);
       window.removeEventListener('festy_session_expired', handleSessionExpired);
+      clearInterval(unreadTimer);
     };
   }, [pathname]);
 
@@ -155,6 +176,38 @@ export default function Navbar() {
               style={{ padding: '8px 16px', fontSize: '0.86rem' }}
             >
               <Users size={16} /> <span className="nav-text-hide">Círculos</span>
+            </button>
+
+            <button
+              onClick={() => router.push('/messages')}
+              className={pathname === '/messages' ? 'btn-primary' : 'btn-secondary'}
+              style={{ padding: '8px 16px', fontSize: '0.86rem', position: 'relative' }}
+            >
+              <MessageCircle size={16} /> <span className="nav-text-hide">Mensajes</span>
+              {unreadMsgCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-4px',
+                    right: '-4px',
+                    minWidth: '18px',
+                    height: '18px',
+                    borderRadius: '9px',
+                    background: 'var(--danger)',
+                    color: '#fff',
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 5px',
+                    boxShadow: '0 2px 6px rgba(239,68,68,0.4)',
+                    border: '2px solid rgba(251,248,246,0.9)',
+                  }}
+                >
+                  {unreadMsgCount > 99 ? '99+' : unreadMsgCount}
+                </span>
+              )}
             </button>
 
             {/* Profile Dropdown Trigger */}

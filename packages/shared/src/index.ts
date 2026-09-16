@@ -192,3 +192,19 @@ export const SyncDeltaSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 export type SyncDeltaInput = z.infer<typeof SyncDeltaSchema>;
+
+// =============================================================================
+// MESSAGING SCHEMAS
+// =============================================================================
+
+export const SendMessageSchema = z.object({
+  receiverId: z.string().uuid(),
+  content: z.string().min(1, 'El mensaje no puede estar vacío').max(5000),
+  circleId: z.string().uuid().optional(),
+});
+export type SendMessageInput = z.infer<typeof SendMessageSchema>;
+
+export const MarkAsReadSchema = z.object({
+  senderId: z.string().uuid(),
+});
+export type MarkAsReadInput = z.infer<typeof MarkAsReadSchema>;

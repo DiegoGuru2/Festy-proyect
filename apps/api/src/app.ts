@@ -7,6 +7,7 @@ import { circleRoutes } from './modules/circles/circles.routes';
 import { birthdayRoutes } from './modules/birthdays/birthdays.routes';
 import { mediaRoutes } from './modules/media/media.routes';
 import { syncRoutes } from './modules/sync/sync.routes';
+import { messageRoutes } from './modules/messages/messages.routes';
 import {
   dispatchHourlyReminders,
   checkAndDispatchUpcomingBirthdayEmails,
@@ -103,6 +104,7 @@ export async function buildApp() {
   await app.register(birthdayRoutes, { prefix: '/api/birthdays' });
   await app.register(mediaRoutes, { prefix: '/api/media' });
   await app.register(syncRoutes, { prefix: '/api/sync' });
+  await app.register(messageRoutes, { prefix: '/api/messages' });
 
   return app;
 }

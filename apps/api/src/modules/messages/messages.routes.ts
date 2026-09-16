@@ -90,40 +90,51 @@ export const messageRoutes: FastifyPluginAsync = async (fastify) => {
     // Para cada contacto, obtener último mensaje y conteo de no leídos
     const contacts = [];
     for (const contact of contactUsers) {
-      // Último mensaje (enviado o recibido)
-      const lastMsgRows = await db
-        .select({
-          id: directMessages.id,
-          senderId: directMessages.senderId,
-          content: directMessages.content,
-          createdAt: directMessages.createdAt,
-          isRead: directMessages.isRead,
-        })
-        .from(directMessages)
-        .where(
-          and(
-            or(
-              and(eq(directMessages.senderId, userId), eq(directMessages.receiverId, contact.id)),
-              and(eq(directMessages.senderId, contact.id), eq(directMessages.receiverId, userId))
-            ),
-            sql`${directMessages.deletedAt} IS NULL`
-          )
-        )
-        .orderBy(desc(directMessages.createdAt))
-        .limit(1);
+      let lastMessage = null;
+      let unreadCount = 0;
 
-      // Conteo de no leídos (mensajes que me envió este contacto y no he leído)
-      const unreadRows = await db
-        .select({ count: sql<number>`COUNT(*)` })
-        .from(directMessages)
-        .where(
-          and(
-            eq(directMessages.senderId, contact.id),
-            eq(directMessages.receiverId, userId),
-            eq(directMessages.isRead, false),
-            sql`${directMessages.deletedAt} IS NULL`
+      try {
+        // Último mensaje (enviado o recibido)
+        const lastMsgRows = await db
+          .select({
+            id: directMessages.id,
+            senderId: directMessages.senderId,
+            content: directMessages.content,
+            createdAt: directMessages.createdAt,
+            isRead: directMessages.isRead,
+          })
+          .from(directMessages)
+          .where(
+            and(
+              or(
+                and(eq(directMessages.senderId, userId), eq(directMessages.receiverId, contact.id)),
+                and(eq(directMessages.senderId, contact.id), eq(directMessages.receiverId, userId))
+              ),
+              sql`${directMessages.deletedAt} IS NULL`
+            )
           )
-        );
+          .orderBy(desc(directMessages.createdAt))
+          .limit(1);
+
+        lastMessage = lastMsgRows[0] || null;
+
+        // Conteo de no leídos (mensajes que me envió este contacto y no he leído)
+        const unreadRows = await db
+          .select({ count: sql<number>`COUNT(*)` })
+          .from(directMessages)
+          .where(
+            and(
+              eq(directMessages.senderId, contact.id),
+              eq(directMessages.receiverId, userId),
+              eq(directMessages.isRead, false),
+              sql`${directMessages.deletedAt} IS NULL`
+            )
+          );
+
+        unreadCount = Number(unreadRows[0]?.count || 0);
+      } catch {
+        // Si falla la consulta de mensajes, seguimos mostrando el contacto
+      }
 
       // Círculos compartidos
       const shared = await getSharedCircles(userId, contact.id);
@@ -131,8 +142,8 @@ export const messageRoutes: FastifyPluginAsync = async (fastify) => {
       contacts.push({
         ...contact,
         sharedCircles: shared,
-        lastMessage: lastMsgRows[0] || null,
-        unreadCount: Number(unreadRows[0]?.count || 0),
+        lastMessage,
+        unreadCount,
       });
     }
 
